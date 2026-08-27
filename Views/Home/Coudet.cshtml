@@ -1,0 +1,140 @@
+@{
+    ViewData["Title"] = "Coudet";
+    var mensaje = ViewBag.Mensaje as string;
+    var correcto = ViewBag.Correcto is bool value && value;
+    var attempts = ViewBag.Attempts is int attemptsValue ? attemptsValue : 0;
+    var diceText = ViewBag.Dice as string;
+    var heldText = ViewBag.Held as string;
+    var diceValues = string.IsNullOrWhiteSpace(diceText)
+        ? new[] { 1, 2, 3, 4, 5 }
+        : diceText
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(int.Parse)
+            .ToArray();
+}
+
+<div class="challenge-page">
+    <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <div class="challenge-panel">
+        <span class="badge">Desafío 1 · Coudet</span>
+        <h1>Generala a lo bruto</h1>
+        <p>
+            Seleccioná los dados que querés mantener. Los dados bloqueados quedan fijos durante 3 tiradas y se desbloquean en la 4ta.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        <div class="dice-status">
+            <span>Intentos: <strong id="attemptCounter">@attempts</strong> / 100</span>
+        </div>
+
+        <div class="dice-grid" id="diceGrid">
+            @for (var i = 0; i < 5; i++)
+            {
+                var val = diceValues[i % diceValues.Length];
+                <div class="die" data-index="@i" data-value="@val">@((val == 1) ? "⚀" : (val == 2) ? "⚁" : (val == 3) ? "⚂" : (val == 4) ? "⚃" : (val == 5) ? "⚄" : "⚅")</div>
+            }
+        </div>
+
+        <form asp-controller="Home" asp-action="Coudet" method="post" class="challenge-form" id="diceForm">
+            <input type="hidden" name="dados" id="dados" value="@string.Join(",", diceValues)" />
+            <input type="hidden" name="held" id="held" value="@heldText" />
+            <input type="hidden" name="intentos" id="intentos" value="@attempts" />
+            <div class="dice-actions">
+                <button type="button" id="rollButton" class="btn btn-danger">Tirar dados</button>
+                <button type="submit" class="btn btn-outline-light">Comprobar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+        const grid = document.getElementById('diceGrid');
+        const hiddenDados = document.getElementById('dados');
+        const hiddenHeld = document.getElementById('held');
+        const hiddenIntentos = document.getElementById('intentos');
+        const attemptCounter = document.getElementById('attemptCounter');
+        const rollButton = document.getElementById('rollButton');
+
+        const state = {
+            dice: Array.from(grid.children).map((el) => Number(el.dataset.value || 1)),
+            locked: Array(5).fill(false),
+            holdTurns: Array(5).fill(0),
+            attempts: Number(hiddenIntentos.value || 0)
+        };
+
+        const heldIndexes = (hiddenHeld.value || '')
+            .split(',')
+            .map((item) => Number(item.trim()))
+            .filter((value) => !Number.isNaN(value) && value >= 0 && value < 5);
+
+        heldIndexes.forEach((index) => {
+            state.locked[index] = true;
+            state.holdTurns[index] = 3;
+        });
+
+        function syncHeldInput() {
+            const indexes = state.locked
+                .map((isLocked, index) => isLocked ? index : null)
+                .filter((index) => index !== null);
+            hiddenHeld.value = indexes.join(',');
+        }
+
+        function renderDice() {
+            const diceEls = Array.from(grid.children);
+            diceEls.forEach((element, index) => {
+                const value = state.dice[index];
+                element.dataset.value = value;
+                element.textContent = diceFaces[value - 1];
+                element.classList.toggle('locked', state.locked[index]);
+                if (state.locked[index]) {
+                    element.title = `Bloqueado por ${state.holdTurns[index]} tiradas más`;
+                } else {
+                    element.title = 'Click para mantener este dado';
+                }
+            });
+
+            hiddenDados.value = state.dice.join(',');
+            hiddenIntentos.value = state.attempts;
+            attemptCounter.textContent = state.attempts;
+            syncHeldInput();
+        }
+
+        grid.querySelectorAll('.die').forEach((die, index) => {
+            die.addEventListener('click', () => {
+                const willLock = !state.locked[index];
+                state.locked[index] = willLock;
+                state.holdTurns[index] = willLock ? 3 : 0;
+                renderDice();
+            });
+        });
+
+        rollButton.addEventListener('click', () => {
+            state.attempts += 1;
+
+            state.dice = state.dice.map((value, index) => {
+                if (state.locked[index]) {
+                    return value;
+                }
+
+                return Math.floor(Math.random() * 6) + 1;
+            });
+
+            state.locked = state.locked.map((isLocked, index) => {
+                if (!isLocked) return false;
+
+                state.holdTurns[index] -= 1;
+                return state.holdTurns[index] > 0;
+            });
+
+            renderDice();
+        });
+
+        renderDice();
+    </script>
+}

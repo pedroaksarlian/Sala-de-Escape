@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Scaloni";
+    var mensaje = ViewBag.Mensaje as string;
+    var correcto = ViewBag.Correcto is bool value && value;
+}
+
+<div class="challenge-page">
+    <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <div class="challenge-panel">
+        <span class="badge">Desafío 5 · Scaloni</span>
+        <h1>El camino</h1>
+        <p>
+            Viste la ruta una sola vez. Ahora tenés que recordarla tal cual. Si te equivocás, te quedás atrapada en el laberinto.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        <div class="maze-box">
+            <p>Ruta vista: derecha → izquierda → derecha → centro</p>
+        </div>
+
+        <form asp-controller="Home" asp-action="Scaloni" method="post" class="challenge-form">
+            <label for="respuesta">Tu secuencia</label>
+            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: D-I-D-C" />
+            <button type="submit" class="btn btn-danger">Resolver</button>
+        </form>
+    </div>
+</div>

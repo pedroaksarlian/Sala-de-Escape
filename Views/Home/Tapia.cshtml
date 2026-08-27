@@ -1,0 +1,40 @@
+@{
+    ViewData["Title"] = "Tapia";
+    var mensaje = ViewBag.Mensaje as string;
+    var correcto = ViewBag.Correcto is bool value && value;
+}
+
+<div class="challenge-page">
+    <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <div class="challenge-panel">
+        <span class="badge">Desafío 4 · Tapia</span>
+        <h1>La figura perfecta</h1>
+        <p>
+            Debés hacer que coincida la figura de arriba con el orden exacto de abajo. Solo una secuencia termina armando el patrón correcto.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        <div class="figure-box">
+            <div class="figure-row">
+                <span>▲</span>
+                <span>◯</span>
+                <span>■</span>
+            </div>
+            <div class="figure-row">
+                <span>◯</span>
+                <span>▲</span>
+                <span>■</span>
+            </div>
+        </div>
+
+        <form asp-controller="Home" asp-action="Tapia" method="post" class="challenge-form">
+            <label for="respuesta">Escribí la secuencia final</label>
+            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: CIRCULO-TRIANGULO-CUADRADO" />
+            <button type="submit" class="btn btn-danger">Resolver</button>
+        </form>
+    </div>
+</div>

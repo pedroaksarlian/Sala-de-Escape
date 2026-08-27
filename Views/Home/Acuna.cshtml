@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Acuña";
+    var mensaje = ViewBag.Mensaje as string;
+    var correcto = ViewBag.Correcto is bool value && value;
+}
+
+<div class="challenge-page">
+    <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <div class="challenge-panel">
+        <span class="badge">Desafío 2 · Acuña</span>
+        <h1>Vestuario 360°</h1>
+        <p>
+            El vestuario tiene que quedar perfecto para el changue de cámara. Seleccioná solo los 3 elementos que faltan para completar el look y seguir con la fuga.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        <form asp-controller="Home" asp-action="Acuna" method="post" class="challenge-form">
+            <div class="check-list">
+                <label><input type="checkbox" name="objetos" value="gorro" /> Gorro</label>
+                <label><input type="checkbox" name="objetos" value="remera" /> Remera</label>
+                <label><input type="checkbox" name="objetos" value="zapatos" /> Zapatos</label>
+                <label><input type="checkbox" name="objetos" value="mochila" /> Mochila</label>
+                <label><input type="checkbox" name="objetos" value="medias" /> Medias</label>
+            </div>
+            <button type="submit" class="btn btn-danger">Resolver</button>
+        </form>
+    </div>
+</div>

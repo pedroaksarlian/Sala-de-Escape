@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Demichelis";
+    var mensaje = ViewBag.Mensaje as string;
+    var correcto = ViewBag.Correcto is bool value && value;
+}
+
+<div class="challenge-page">
+    <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <div class="challenge-panel">
+        <span class="badge">Desafío 3 · Demichelis</span>
+        <h1>Jet-lag en alemán</h1>
+        <p>
+            El audio está cargado de ruido y dejetas en alemán. Con el diccionario que te dieron, decodificá la frase final para seguir avanzando.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        <div class="audio-box">
+            <span>🎧 Diccionario:</span>
+            <strong>"LLEGAMOS" = "SUCHEN", "FINAL" = "ENDE", "CONTENEDOR" = "CONTAINER"</strong>
+        </div>
+
+        <form asp-controller="Home" asp-action="Demichelis" method="post" class="challenge-form">
+            <label for="respuesta">Frase decodificada</label>
+            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Escribí la frase en español" />
+            <button type="submit" class="btn btn-danger">Resolver</button>
+        </form>
+    </div>
+</div>
