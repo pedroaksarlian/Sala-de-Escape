@@ -13,20 +13,31 @@
             El vestuario tiene que quedar perfecto para el changue de cámara. Seleccioná solo los 3 elementos que faltan para completar el look y seguir con la fuga.
         </p>
 
+        <div class="find-instructions" style="margin-bottom:0.6rem;font-weight:700;color:#fde68a;">
+            Buscá y tocá en la imagen: <span style="color:#fff;">Gorra</span>, <span style="color:#fff;">Remera</span>, <span style="color:#fff;">Mochila</span>
+        </div>
+
         @if (!string.IsNullOrWhiteSpace(mensaje))
         {
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
 
         <form asp-controller="Home" asp-action="Acuna" method="post" class="challenge-form">
-            <div class="check-list">
-                <label><input type="checkbox" name="objetos" value="gorro" /> Gorro</label>
-                <label><input type="checkbox" name="objetos" value="remera" /> Remera</label>
-                <label><input type="checkbox" name="objetos" value="zapatos" /> Zapatos</label>
-                <label><input type="checkbox" name="objetos" value="mochila" /> Mochila</label>
-                <label><input type="checkbox" name="objetos" value="medias" /> Medias</label>
+            <div class="room-wrapper">
+                <img src="/img/AcuñaVestuario.png" id="acuna-image" alt="Vestuario Acuña" />
+                <!-- Posiciones ajustadas según la foto adjunta; data-radius-percent controla sensibilidad -->
+                <div class="hotspot" data-item="gorra" data-radius-percent="4" style="left:22%; top:8%;" title="Gorra"></div>
+                <div class="hotspot" data-item="remera" data-radius-percent="4" style="left:44%; top:8%;" title="Remera"></div>
+                <div class="hotspot" data-item="mochila" data-radius-percent="6" style="left:70%; top:76%;" title="Mochila"></div>
             </div>
-            <button type="submit" class="btn btn-danger">Resolver</button>
+
+            <div id="find-live" aria-live="polite" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">
+                
+            </div>
+
+            <!-- check-list removed: discovery is via clicking the image hotspots -->
         </form>
+
+        <script src="/js/findObjects.js"></script>
     </div>
 </div>

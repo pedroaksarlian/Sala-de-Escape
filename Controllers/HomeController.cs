@@ -186,7 +186,7 @@ public class HomeController : Controller
             SaveProgress("Acuna");
             TempData["mensaje"] = "Perfecto: armaste el vestuario 360° y encontraste los objetos clave.";
             TempData["correcto"] = true;
-            return RedirectToNextChallenge();
+            return RedirectToAction(nameof(Demichelis));
         }
         else
         {
@@ -195,6 +195,21 @@ public class HomeController : Controller
         }
 
         return RedirectToAction(nameof(Acuna));
+    }
+
+    [HttpPost]
+    public IActionResult AdvanceFromAcuna(string[] objetos)
+    {
+        if (!CanAccessChallenge("Acuna"))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        // mark Acuna as completed and go directly to Demichelis
+        SaveProgress("Acuna");
+        TempData["mensaje"] = "Perfecto: armaste el vestuario 360° y encontraste los objetos clave.";
+        TempData["correcto"] = true;
+        return RedirectToAction(nameof(Demichelis));
     }
 
     public IActionResult Demichelis()
