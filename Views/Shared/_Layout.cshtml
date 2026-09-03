@@ -10,6 +10,29 @@
     <link rel="stylesheet" href="~/TP06.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var participante = ViewBag.Participante as string ?? "Jugador";
+        var habitacion = ViewBag.HabitacionActual as string ?? "Sala";
+        var partidaEnCurso = ViewBag.PartidaEnCurso is bool enCurso && enCurso;
+    }
+
+    @if (partidaEnCurso)
+    {
+        <div class="room-status-bar">
+            <div class="room-status-left">
+                <span class="status-label">Participante</span>
+                <strong>@participante</strong>
+            </div>
+            <div class="room-status-center">
+                <span class="status-label">Sala actual</span>
+                <strong>@habitacion</strong>
+            </div>
+            <div class="room-status-right">
+                <span class="status-pill">Partida en curso</span>
+            </div>
+        </div>
+    }
+
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

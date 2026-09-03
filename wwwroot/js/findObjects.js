@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   const hotspots = Array.from(document.querySelectorAll('.hotspot'));
-  const STORAGE_KEY = 'acunaHotspots';
+  const STORAGE_KEY = 'acunaHotspots-v2';
+  const LEGACY_STORAGE_KEY = 'acunaHotspots';
 
   if (!hotspots.length) return;
 
@@ -8,22 +9,77 @@ document.addEventListener('DOMContentLoaded', function () {
   const checklist = document.querySelector('.check-list');
   if (checklist) checklist.remove();
 
-  // Load saved positions from localStorage (if any)
+  function hasManualInlinePositions() {
+    return hotspots.some(h => (h.style.left && h.style.top) || h.style.left || h.style.top);
+  }
+
+  function saveCurrentPositions() {
+    const map = {};
+    hotspots.forEach(h => {
+      const item = h.getAttribute('data-item');
+      map[item] = {
+        left: h.style.left || getComputedStyle(h).left,
+        top: h.style.top || getComputedStyle(h).top,
+        radius: h.getAttribute('data-radius-percent')
+      };
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+  }
+
+  function resetToDefaults() {
+    const defaultMap = {
+      gorra: { left: '31%', top: '12%', radius: '4' },
+      remera: { left: '55%', top: '15%', radius: '4' },
+      mochila: { left: '69%', top: '76%', radius: '6' }
+    };
+
+    hotspots.forEach(h => {
+      const item = h.getAttribute('data-item');
+      if (defaultMap[item]) {
+        h.style.left = defaultMap[item].left;
+        h.style.top = defaultMap[item].top;
+        h.setAttribute('data-radius-percent', defaultMap[item].radius);
+      }
+    });
+
+    saveCurrentPositions();
+  }
+
+  // Load saved positions from localStorage (if any), but do NOT overwrite inline values manually set in the markup.
   function loadSavedPositions() {
     try {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+
+      if (hasManualInlinePositions()) {
+        saveCurrentPositions();
+        return;
+      }
+
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
+      if (!raw) {
+        resetToDefaults();
+        return;
+      }
+
       const map = JSON.parse(raw);
+      let hasValidData = false;
+
       hotspots.forEach(h => {
         const item = h.getAttribute('data-item');
-        if (map[item]) {
+        if (map[item] && map[item].left && map[item].top) {
           h.style.left = map[item].left;
           h.style.top = map[item].top;
           if (map[item].radius) h.setAttribute('data-radius-percent', map[item].radius);
+          hasValidData = true;
         }
       });
+
+      if (!hasValidData) {
+        resetToDefaults();
+      }
     } catch (e) {
       console.warn('Could not load saved hotspots', e);
+      resetToDefaults();
     }
   }
 
@@ -112,12 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
           const topPct = Math.max(0, Math.min(100, (clickY / imgH) * 100));
           nearest.style.left = leftPct.toFixed(2) + '%';
           nearest.style.top = topPct.toFixed(2) + '%';
-          // persist
-          const map = {};
-          hotspots.forEach(h => {
-            map[h.getAttribute('data-item')] = { left: h.style.left, top: h.style.top, radius: h.getAttribute('data-radius-percent') };
-          });
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+          saveCurrentPositions();
           updatePositionsDisplay();
           alert('Posición actualizada y guardada localmente para: ' + nearest.getAttribute('data-item'));
         }

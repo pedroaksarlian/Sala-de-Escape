@@ -108,6 +108,11 @@
         grid.querySelectorAll('.die').forEach((die, index) => {
             die.addEventListener('click', () => {
                 const willLock = !state.locked[index];
+
+                if (!willLock) {
+                    state.dice[index] = Math.floor(Math.random() * 6) + 1;
+                }
+
                 state.locked[index] = willLock;
                 state.holdTurns[index] = willLock ? 3 : 0;
                 renderDice();

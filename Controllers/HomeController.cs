@@ -21,10 +21,12 @@ public class HomeController : Controller
         "Di Carlo"
     };
     private readonly ILogger<HomeController> _logger;
+    private readonly BD _bd;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
     {
         _logger = logger;
+        _bd = new BD(configuration);
     }
 
     public IActionResult Index()
@@ -33,6 +35,9 @@ public class HomeController : Controller
         ViewBag.Progress = progress;
         ViewBag.CompletedCount = progress.Count;
         ViewBag.Won = IsWon();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Lobby";
+        ViewBag.PartidaEnCurso = progress.Count > 0 || IsWon();
         return View();
     }
 
@@ -80,6 +85,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Coudet";
+        ViewBag.PartidaEnCurso = true;
         ViewBag.Attempts = attempts;
         ViewBag.Dice = dice;
         ViewBag.Held = held;
@@ -166,6 +174,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Acuna";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -222,6 +233,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Demichelis";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -261,6 +275,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Tapia";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -301,6 +318,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Scaloni";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -342,6 +362,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Donofrio";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -382,7 +405,9 @@ public class HomeController : Controller
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
-        ViewBag.Won = IsWon();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Di Carlo";
+        ViewBag.PartidaEnCurso = true;
         return View();
     }
 
@@ -461,7 +486,29 @@ public class HomeController : Controller
 
         var previousChallenge = ChallengeOrder[index - 1];
         var progress = GetProgress();
-        return progress.Any(item => string.Equals(item, previousChallenge, StringComparison.OrdinalIgnoreCase));
+        if (progress.Any(item => string.Equals(item, previousChallenge, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        var nombreParticipante = GetParticipanteActual();
+        var previousSalaId = GetSalaIdForChallenge(previousChallenge);
+        return _bd.ValidarAccesoSala(nombreParticipante, previousSalaId);
+    }
+
+    private int GetSalaIdForChallenge(string challengeName)
+    {
+        return challengeName switch
+        {
+            "Coudet" => 1,
+            "Acuna" => 2,
+            "Demichelis" => 3,
+            "Tapia" => 4,
+            "Scaloni" => 5,
+            "Donofrio" => 6,
+            "Di Carlo" => 7,
+            _ => 1
+        };
     }
 
     private IActionResult RedirectToNextChallenge()
@@ -493,5 +540,25 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+
+    private void PrepareRoomView(string roomName)
+    {
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = roomName;
+        ViewBag.PartidaEnCurso = true;
+        ViewBag.Progress = GetProgress();
+    }
+
+    private string GetParticipanteActual()
+    {
+        var nombre = HttpContext.Session.GetString("participante");
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            nombre = "Jugador";
+            HttpContext.Session.SetString("participante", nombre);
+        }
+
+        return nombre;
     }
 }
