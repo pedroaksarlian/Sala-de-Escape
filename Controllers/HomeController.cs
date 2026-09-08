@@ -247,7 +247,14 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var isCorrect = string.Equals(respuesta?.Trim(), "LLEGAMOS AL FINAL DEL CONTENEDOR", StringComparison.OrdinalIgnoreCase);
+        // Build expected phrase from the database table Demichelis
+        var palabras = _bd.ObtenerPalabrasDemichelis();
+        var expected = string.Join(" ", palabras)
+            .Replace("\r", " ")
+            .Replace("\n", " ");
+        expected = string.Join(" ", expected.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+
+        var isCorrect = string.Equals(respuesta?.Trim(), expected.Trim(), StringComparison.OrdinalIgnoreCase);
 
         if (isCorrect)
         {
@@ -308,6 +315,43 @@ public class HomeController : Controller
         return RedirectToAction(nameof(Tapia));
     }
 
+    [HttpPost]
+    public IActionResult TapiaComplete()
+    {
+        if (!CanAccessChallenge("Tapia"))
+        {
+            return Json(new { redirect = Url.Action(nameof(Index)) });
+        }
+
+        SaveProgress("Tapia");
+        TempData["mensaje"] = "Genial: resolviste la sala Tapia.";
+        TempData["correcto"] = true;
+
+        var progress = GetProgress();
+
+        foreach (var challenge in ChallengeOrder)
+        {
+            if (!progress.Any(item => string.Equals(item, challenge, StringComparison.OrdinalIgnoreCase)))
+            {
+                var actionName = challenge switch
+                {
+                    "Coudet" => nameof(Coudet),
+                    "Acuna" => nameof(Acuna),
+                    "Demichelis" => nameof(Demichelis),
+                    "Tapia" => nameof(Tapia),
+                    "Scaloni" => nameof(Scaloni),
+                    "Donofrio" => nameof(Donofrio),
+                    "Di Carlo" => nameof(DiCarlo),
+                    _ => nameof(Index)
+                };
+
+                return Json(new { redirect = Url.Action(actionName) });
+            }
+        }
+
+        return Json(new { redirect = Url.Action(nameof(Ganaste)) });
+    }
+
     public IActionResult Scaloni()
     {
         if (!CanAccessChallenge("Scaloni"))
@@ -350,6 +394,43 @@ public class HomeController : Controller
         }
 
         return RedirectToAction(nameof(Scaloni));
+    }
+
+    [HttpPost]
+    public IActionResult ScaloniComplete()
+    {
+        if (!CanAccessChallenge("Scaloni"))
+        {
+            return Json(new { redirect = Url.Action(nameof(Index)) });
+        }
+
+        SaveProgress("Scaloni");
+        TempData["mensaje"] = "Perfecto: recordaste bien el camino y desbloqueaste la ruta.";
+        TempData["correcto"] = true;
+
+        var progress = GetProgress();
+
+        foreach (var challenge in ChallengeOrder)
+        {
+            if (!progress.Any(item => string.Equals(item, challenge, StringComparison.OrdinalIgnoreCase)))
+            {
+                var actionName = challenge switch
+                {
+                    "Coudet" => nameof(Coudet),
+                    "Acuna" => nameof(Acuna),
+                    "Demichelis" => nameof(Demichelis),
+                    "Tapia" => nameof(Tapia),
+                    "Scaloni" => nameof(Scaloni),
+                    "Donofrio" => nameof(Donofrio),
+                    "Di Carlo" => nameof(DiCarlo),
+                    _ => nameof(Index)
+                };
+
+                return Json(new { redirect = Url.Action(actionName) });
+            }
+        }
+
+        return Json(new { redirect = Url.Action(nameof(Ganaste)) });
     }
 
     public IActionResult Donofrio()

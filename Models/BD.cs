@@ -56,4 +56,13 @@ public class BD
 
         return affected > 0;
     }
+
+    public List<string> ObtenerPalabrasDemichelis()
+    {
+        using var connection = new SqlConnection(_connectionString);
+        var items = connection.Query<string>(
+            "SELECT Palabra FROM Demichelis ORDER BY ID ASC");
+
+        return items.Select(p => (p ?? string.Empty).Trim()).Where(p => !string.IsNullOrEmpty(p)).ToList();
+    }
 }

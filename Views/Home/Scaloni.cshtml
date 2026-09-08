@@ -19,13 +19,32 @@
         }
 
         <div class="maze-box">
-            <p>Ruta vista: derecha → izquierda → derecha → centro</p>
+            <p>Memorizar y reproducir el camino: hacé clic en las casillas desde la columna izquierda hasta la derecha siguiendo el recorrido mostrado.</p>
+
+            <div class="maze-controls">
+                <label>Filas:</label>
+                <select id="rowsSelect">
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6" selected>6</option>
+                    <option value="7">7</option>
+                </select>
+                <label>Columnas:</label>
+                <select id="colsSelect">
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8" selected>8</option>
+                    <option value="9">9</option>
+                </select>
+                <button id="newPathBtn" class="btn btn-sm btn-outline-light">Generar camino</button>
+                <button id="revealPathBtn" class="btn btn-sm btn-outline-light">Mostrar camino</button>
+                <div id="errorsDisplay" style="margin-left:12px;font-weight:700;color:#fecaca">Errores: 0</div>
+            </div>
+
+            <div id="mazeGrid" class="maze-grid" aria-label="Grilla del laberinto"></div>
+            <div id="mazeResult" style="margin-top:10px;font-weight:700"></div>
         </div>
 
-        <form asp-controller="Home" asp-action="Scaloni" method="post" class="challenge-form">
-            <label for="respuesta">Tu secuencia</label>
-            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: D-I-D-C" />
-            <button type="submit" class="btn btn-danger">Resolver</button>
-        </form>
+        <script src="/js/scaloni.js"></script>
     </div>
 </div>

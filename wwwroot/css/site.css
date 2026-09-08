@@ -472,3 +472,123 @@ body {
   font-weight: 700;
   font-size: 0.72rem;
 }
+
+/* Chiqui Tapia game styles */
+.challenge-game {
+  margin-top: 1rem;
+}
+.slots {
+  display: flex;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+.slot {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  border: 4px solid rgba(255,255,255,0.08);
+  box-shadow: 0 12px 26px rgba(2,6,23,0.6);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.slot:focus {
+  outline: none;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(2,6,23,0.75);
+}
+.controls {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+#result {
+  font-weight: 700;
+}
+.text-success {
+  color: #bbf7d0 !important;
+}
+.text-danger {
+  color: #fecaca !important;
+}
+.text-muted {
+  color: rgba(203,213,225,0.9) !important;
+}
+
+/* Palette and level styles */
+.game-area {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.palette {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.palette-item {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  border: 3px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 18px rgba(2,6,23,0.4);
+  cursor: pointer;
+}
+.palette-item.placed {
+  opacity: 0.35;
+  transform: scale(0.95);
+}
+.palette-item.selected {
+  outline: 3px solid rgba(255,255,255,0.12);
+  transform: translateY(-6px);
+}
+.level-select {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+.level-btn.active {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.level-btn.locked {
+  opacity: 0.38;
+  pointer-events: none;
+  border-color: rgba(255,255,255,0.04);
+}
+
+/* Scaloni maze styles */
+.maze-grid {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  width: 100%;
+}
+.maze-cell {
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  aspect-ratio: 1/1;
+  border: 2px solid rgba(255,255,255,0.03);
+  transition: background .12s ease, transform .08s ease;
+  cursor: pointer;
+}
+.maze-cell.maze-path {
+  background: rgba(59,130,246,0.55);
+}
+.maze-cell.maze-correct {
+  background: rgba(34,197,94,0.6);
+}
+.maze-cell.maze-wrong {
+  background: rgba(239,68,68,0.6);
+}
+.maze-cell.maze-active {
+  outline: 3px solid rgba(255,255,255,0.06);
+  transform: translateY(-4px);
+}
+
+@media (max-width: 600px) {
+  .slot { width: 72px; height: 72px; }
+  .palette-item { width: 52px; height: 52px; }
+}

@@ -18,23 +18,29 @@
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
 
-        <div class="figure-box">
-            <div class="figure-row">
-                <span>▲</span>
-                <span>◯</span>
-                <span>■</span>
+        <div class="challenge-game" id="chiqui-tapia-game">
+            <p>Elegí un nivel y colocá los colores de la paleta en el orden que creas correcto para que el chiqui lo verifique.</p>
+
+            <div class="level-select">
+                <label>Nivel:</label>
+                <button class="level-btn btn btn-sm btn-outline-light" data-level="3">Fácil (3)</button>
+                <button class="level-btn btn btn-sm btn-outline-light" data-level="4">Medio (4)</button>
+                <button class="level-btn btn btn-sm btn-outline-light" data-level="5">Difícil (5)</button>
             </div>
-            <div class="figure-row">
-                <span>◯</span>
-                <span>▲</span>
-                <span>■</span>
+
+            <div class="game-area">
+                <div class="palette" id="palette" aria-label="Paleta de colores"></div>
+                <div class="slots" id="slots" aria-label="Slots para colocar colores"></div>
             </div>
+
+            <div class="controls">
+                <button id="verifyBtn" class="btn btn-primary">Verificar</button>
+                <button id="resetBtn" class="btn btn-secondary">Reiniciar</button>
+            </div>
+
+            <div id="result" class="mt-3" aria-live="polite"></div>
         </div>
 
-        <form asp-controller="Home" asp-action="Tapia" method="post" class="challenge-form">
-            <label for="respuesta">Escribí la secuencia final</label>
-            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: CIRCULO-TRIANGULO-CUADRADO" />
-            <button type="submit" class="btn btn-danger">Resolver</button>
-        </form>
+        <script src="/js/chiqui-tapia.js"></script>
     </div>
 </div>
