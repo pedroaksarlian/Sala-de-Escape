@@ -1,13 +1,11 @@
 // scaloni.js
 (function(){
-    let rows = 6;
-    let cols = 8;
+    let rows = 8;
+    let cols = 16;
     let path = []; // path[col] = row
     let userIndex = 0;
     let errors = 0;
     let showing = false;
-
-    const errorsDisplay = () => document.getElementById('errorsDisplay');
     const mazeGrid = () => document.getElementById('mazeGrid');
     const resultEl = () => document.getElementById('mazeResult');
 
@@ -16,12 +14,12 @@
         let cur = Math.floor(Math.random() * r);
         p[0] = cur;
         for (let col = 1; col < c; col++) {
-            const moves = [-1,0,1];
-            // prefer staying same or small vertical changes
+            // Solo movimientos adyacentes para mantener el camino contiguo [-1, 0, 1]
+            const moves = [-1, 0, 1];
             const choice = moves[Math.floor(Math.random()*moves.length)];
             let next = cur + choice;
             if (next < 0) next = 0;
-            if (next >= r) next = r -1;
+            if (next >= r) next = r - 1;
             cur = next;
             p[col] = cur;
         }
@@ -67,12 +65,6 @@
     function resetProgress(){
         userIndex = 0;
         clearHighlights();
-        updateErrors();
-    }
-
-    function updateErrors(){
-        const el = errorsDisplay();
-        if (el) el.textContent = `Errores: ${errors}`;
     }
 
     function onCellClick(row,col,cellEl){
@@ -82,10 +74,9 @@
             // wrong col
             cellEl.classList.add('maze-wrong');
             errors++;
-            updateErrors();
             resetProgress();
             if (errors >= 5) {
-                errors = 0; updateErrors(); showPath(2500);
+                errors = 0; showPath(2500);
             }
             return;
         }
@@ -103,31 +94,22 @@
                     .then(r=>r.json())
                     .then(j=>{ if (j && j.redirect) setTimeout(()=> window.location.href = j.redirect,900); })
                     .catch(()=>{});
-            } else {
-                // mark next column as active
-                const next = mazeGrid().querySelector(`.maze-cell[data-row='${path[userIndex]}'][data-col='${userIndex}']`);
-                if (next) next.classList.add('maze-active');
             }
         } else {
             cellEl.classList.add('maze-wrong');
             errors++;
-            updateErrors();
             resetProgress();
             if (errors >= 5) {
-                errors = 0; updateErrors(); showPath(2500);
+                errors = 0; showPath(2500);
             }
         }
     }
 
     document.addEventListener('DOMContentLoaded', ()=>{
-        const rowsSelect = document.getElementById('rowsSelect');
-        const colsSelect = document.getElementById('colsSelect');
         const newBtn = document.getElementById('newPathBtn');
         const revealBtn = document.getElementById('revealPathBtn');
 
         function gen(){
-            rows = Number(rowsSelect.value);
-            cols = Number(colsSelect.value);
             path = makePath(rows, cols);
             buildGrid();
             resetProgress();
@@ -135,11 +117,6 @@
             setTimeout(()=> showPath(2500), 300);
         }
 
-        // use same generator (makePath) as before
-        function makePath(r,c){ return (function(){ const p=[]; let cur=Math.floor(Math.random()*r); p[0]=cur; for(let col=1;col<c;col++){ const moves=[-1,0,1]; const choice = moves[Math.floor(Math.random()*moves.length)]; let next=cur+choice; if(next<0) next=0; if(next>=r) next=r-1; cur=next; p[col]=cur;} return p; })(); }
-
-        rowsSelect.addEventListener('change', gen);
-        colsSelect.addEventListener('change', gen);
         newBtn.addEventListener('click', (e)=>{ e.preventDefault(); gen(); });
         revealBtn.addEventListener('click', (e)=>{ e.preventDefault(); showPath(2200); });
 
@@ -147,7 +124,6 @@
         path = makePath(rows, cols);
         buildGrid();
         setTimeout(()=> showPath(2500), 300);
-        updateErrors();
     });
 
 })();

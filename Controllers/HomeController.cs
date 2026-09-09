@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TP06.Models;
@@ -50,6 +51,7 @@ public class HomeController : Controller
         }
 
         var normalized = codigo.Trim();
+
         return normalized.ToUpperInvariant() switch
         {
             "CANTILO" => RedirectToAction(nameof(Coudet)),
@@ -247,6 +249,19 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var palabra1 = Request.Form["palabra1"].ToString();
+        var palabra2 = Request.Form["palabra2"].ToString();
+        var palabra3 = Request.Form["palabra3"].ToString();
+
+        var respuestaCombinada = string.Join(" ", new[] { palabra1, palabra2, palabra3 }
+            .Select(p => p?.Trim())
+            .Where(p => !string.IsNullOrWhiteSpace(p)));
+
+        if (string.IsNullOrWhiteSpace(respuestaCombinada))
+        {
+            respuestaCombinada = respuesta ?? string.Empty;
+        }
+
         // Build expected phrase from the database table Demichelis
         var palabras = _bd.ObtenerPalabrasDemichelis();
         var expected = string.Join(" ", palabras)
@@ -254,7 +269,7 @@ public class HomeController : Controller
             .Replace("\n", " ");
         expected = string.Join(" ", expected.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
 
-        var isCorrect = string.Equals(respuesta?.Trim(), expected.Trim(), StringComparison.OrdinalIgnoreCase);
+        var isCorrect = string.Equals(respuestaCombinada.Trim(), expected.Trim(), StringComparison.OrdinalIgnoreCase);
 
         if (isCorrect)
         {
@@ -483,12 +498,34 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var jugadores = _bd.ObtenerJugadoresDiCarlo();
+        var plantilla = GetDiCarloPlantilla();
+        var jugadoresAdivinados = jugadores
+            .Where(j => plantilla.Contains(NormalizePlayerName(j.Nombre), StringComparer.OrdinalIgnoreCase))
+            .OrderBy(j => j.Id)
+            .ToList();
+
+        var objetivo = jugadores
+            .FirstOrDefault(j => !plantilla.Contains(NormalizePlayerName(j.Nombre), StringComparer.OrdinalIgnoreCase));
+
+        var equipoCompleto = jugadoresAdivinados.Count == jugadores.Count;
+        if (equipoCompleto)
+        {
+            SaveProgress("Di Carlo");
+            HttpContext.Session.SetString(WinKey, "true");
+        }
+
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Di Carlo";
         ViewBag.PartidaEnCurso = true;
+        ViewBag.Jugadores = jugadores;
+        ViewBag.Plantilla = jugadoresAdivinados;
+        ViewBag.Objetivo = objetivo;
+        ViewBag.Tablero = BuildDiCarloBoard(jugadoresAdivinados);
+        ViewBag.EquipoCompleto = equipoCompleto;
         return View();
     }
 
@@ -500,22 +537,133 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var isCorrect = string.Equals(respuesta?.Trim(), "PRESIONAR", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(respuesta?.Trim(), "PRESIONAR Y LLEGAR AL SEGUNDO PALO", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(respuesta?.Trim(), "SEGUNDO PALO", StringComparison.OrdinalIgnoreCase);
+        var jugadores = _bd.ObtenerJugadoresDiCarlo();
+        var plantilla = GetDiCarloPlantilla();
 
-        if (isCorrect)
+        if (string.IsNullOrWhiteSpace(respuesta))
+        {
+            TempData["mensaje"] = "Escribí el nombre del jugador que querés sumar a la plantilla.";
+            TempData["correcto"] = false;
+            return RedirectToAction(nameof(DiCarlo));
+        }
+
+        var respuestaNormalizada = NormalizePlayerName(respuesta);
+        var jugador = jugadores.FirstOrDefault(j => NormalizePlayerName(j.Nombre) == respuestaNormalizada);
+
+        if (jugador == null)
+        {
+            TempData["mensaje"] = "Ese jugador no está en la base de datos. Revisá el nombre y probá otra vez.";
+            TempData["correcto"] = false;
+            return RedirectToAction(nameof(DiCarlo));
+        }
+
+        var nombreNormalizado = NormalizePlayerName(jugador.Nombre);
+        if (plantilla.Contains(nombreNormalizado, StringComparer.OrdinalIgnoreCase))
+        {
+            TempData["mensaje"] = $"{jugador.Nombre} ya está en la plantilla.";
+            TempData["correcto"] = false;
+            return RedirectToAction(nameof(DiCarlo));
+        }
+
+        plantilla.Add(nombreNormalizado);
+        SetDiCarloPlantilla(plantilla);
+
+        var equipoCompleto = plantilla.Count == jugadores.Count;
+        if (equipoCompleto)
         {
             SaveProgress("Di Carlo");
             HttpContext.Session.SetString(WinKey, "true");
-            TempData["mensaje"] = "Que linda decisión: el partido se ganó por la presión y la paciencia. Pezzela logró escapar.";
+            TempData["mensaje"] = "Plantilla completa: ya tenés armado el equipo para continuar con el escape.";
             TempData["correcto"] = true;
-            return RedirectToAction(nameof(Ganaste));
+        }
+        else
+        {
+            TempData["mensaje"] = $"Acertaste: {jugador.Nombre} quedó sumado a la plantilla.";
+            TempData["correcto"] = true;
         }
 
-        TempData["mensaje"] = "La vida no se define por el primer pase. Elegí la opción más inteligente para sostener el partido.";
-        TempData["correcto"] = false;
         return RedirectToAction(nameof(DiCarlo));
+    }
+
+    private List<string> GetDiCarloPlantilla()
+    {
+        var raw = HttpContext.Session.GetString("dicarloPlantilla") ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return new List<string>();
+        }
+
+        return raw.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void SetDiCarloPlantilla(IEnumerable<string> nombres)
+    {
+        var lista = nombres
+            .Select(NormalizePlayerName)
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        HttpContext.Session.SetString("dicarloPlantilla", string.Join('|', lista));
+    }
+
+    private static List<DiCarloSlot> BuildDiCarloBoard(List<JugadorDiCarlo> jugadoresAdivinados)
+    {
+        var slots = new[]
+        {
+            new DiCarloSlot { Label = "ST", Categoria = "Delantero" },
+            new DiCarloSlot { Label = "ST", Categoria = "Delantero" },
+            new DiCarloSlot { Label = "LM", Categoria = "Delantero" },
+            new DiCarloSlot { Label = "RM", Categoria = "Delantero" },
+            new DiCarloSlot { Label = "CM", Categoria = "Mediocampista" },
+            new DiCarloSlot { Label = "CDM", Categoria = "Mediocampista" },
+            new DiCarloSlot { Label = "LB", Categoria = "Defensor" },
+            new DiCarloSlot { Label = "RB", Categoria = "Defensor" },
+            new DiCarloSlot { Label = "CB", Categoria = "Defensor" },
+            new DiCarloSlot { Label = "CB", Categoria = "Defensor" },
+            new DiCarloSlot { Label = "GK", Categoria = "Arquero" }
+        };
+
+        var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var slot in slots)
+        {
+            slot.Jugador = jugadoresAdivinados
+                .FirstOrDefault(j =>
+                    string.Equals(j.Posicion, slot.Categoria, StringComparison.OrdinalIgnoreCase)
+                    && !usados.Contains(NormalizePlayerName(j.Nombre)));
+
+            if (slot.Jugador != null)
+            {
+                usados.Add(NormalizePlayerName(slot.Jugador.Nombre));
+            }
+        }
+
+        return slots.ToList();
+    }
+
+    private static string NormalizePlayerName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim();
+        normalized = new string(normalized.Normalize(NormalizationForm.FormD)
+            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark)
+            .ToArray());
+
+        return normalized.ToUpperInvariant();
+    }
+
+    private sealed class DiCarloSlot
+    {
+        public string Label { get; set; } = string.Empty;
+        public string Categoria { get; set; } = string.Empty;
+        public JugadorDiCarlo? Jugador { get; set; }
     }
 
     public IActionResult Ganaste()
@@ -548,8 +696,31 @@ public class HomeController : Controller
         if (!exists)
         {
             progress.Add(challenge);
-            HttpContext.Session.SetString(ProgressKey, string.Join(',', progress));
+            var progressStr = string.Join(',', progress);
+            HttpContext.Session.SetString(ProgressKey, progressStr);
+            
+            // Generar y guardar código en la BD
+            var codigo = GenerarCodigoUnico();
+            _bd.GuardarCodigo(codigo, progressStr);
+            
+            // Pasar el código a la siguiente vista para mostrar al usuario
+            TempData["CodigoSesion"] = codigo;
         }
+    }
+
+    private string GenerarCodigoUnico()
+    {
+        const string caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var random = new Random();
+        var codigo = new System.Text.StringBuilder();
+        
+        // Generar código de 8 caracteres
+        for (int i = 0; i < 8; i++)
+        {
+            codigo.Append(caracteres[random.Next(caracteres.Length)]);
+        }
+        
+        return codigo.ToString();
     }
 
     private bool IsWon()

@@ -59,10 +59,60 @@ public class BD
 
     public List<string> ObtenerPalabrasDemichelis()
     {
-        using var connection = new SqlConnection(_connectionString);
-        var items = connection.Query<string>(
-            "SELECT Palabra FROM Demichelis ORDER BY ID ASC");
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var items = connection.Query<string>(
+                "SELECT Palabra FROM Demichelis ORDER BY ID ASC");
 
-        return items.Select(p => (p ?? string.Empty).Trim()).Where(p => !string.IsNullOrEmpty(p)).ToList();
+            return items.Select(p => (p ?? string.Empty).Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+        }
+        catch
+        {
+            return new List<string>
+            {
+                "Tiempo",
+                "Lejos",
+                "Campos de entrenamiento"
+            };
+        }
+    }
+
+    public List<JugadorDiCarlo> ObtenerJugadoresDiCarlo()
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var rows = connection.Query<JugadorDiCarlo>(
+                "SELECT Id, Nombre, Adivinanza, Posicion FROM Jugadores ORDER BY Id ASC");
+
+            return rows
+                .Where(j => !string.IsNullOrWhiteSpace(j.Nombre))
+                .ToList();
+        }
+        catch
+        {
+            return new List<JugadorDiCarlo>
+            {
+                new() { Id = 1, Nombre = "Franco Armani", Adivinanza = "Bajo los tres palos parece gigante, con tapadas eternas en noches de gloria.", Posicion = "Arquero" },
+                new() { Id = 2, Nombre = "Gonzalo Montiel", Adivinanza = "Por el lateral derecho no pasa nadie y es el que pone el sello final.", Posicion = "Defensor" },
+                new() { Id = 3, Nombre = "Daniel Passarella", Adivinanza = "Defensor con gol, voz de mando y gran capitán.", Posicion = "Defensor" },
+                new() { Id = 4, Nombre = "Jonatan Maidana", Adivinanza = "Casi no habla, pero deja la vida en cada cruce.", Posicion = "Defensor" },
+                new() { Id = 5, Nombre = "Marcos Acuña", Adivinanza = "Banda izquierda, garra y empuje constante.", Posicion = "Defensor" },
+                new() { Id = 6, Nombre = "Enzo Pérez", Adivinanza = "Se dejó la vida en el medio y ganó la historia.", Posicion = "Mediocampista" },
+                new() { Id = 7, Nombre = "Leonardo Ponzio", Adivinanza = "Comandante eterno del mediocampo, con garra y liderazgo.", Posicion = "Mediocampista" },
+                new() { Id = 8, Nombre = "Enzo Fernández", Adivinanza = "Surgido de la cantera y con clase para romper el partido.", Posicion = "Mediocampista" },
+                new() { Id = 9, Nombre = "Julián Álvarez", Adivinanza = "Picó sin parar y hacía goles con hambre constante.", Posicion = "Delantero" },
+                new() { Id = 10, Nombre = "Enzo Francescoli", Adivinanza = "Elegancia pura con la banda en el pecho y una clase infinita.", Posicion = "Delantero" },
+                new() { Id = 11, Nombre = "Radamel Falcao", Adivinanza = "Tigre del área, letal en el remate y con hambre de gol.", Posicion = "Delantero" }
+            };
+        }
+    }
+
+    public void GuardarCodigo(string codigo, string progreso)
+    {
+        // No se usa por ahora; la aplicación no tiene tabla de códigos.
     }
 }

@@ -360,6 +360,23 @@ body {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .dicarlo-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dicarlo-bottom-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dicarlo-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dicarlo-input-row .btn {
+    width: 100%;
+  }
 }
 
 /* Hotspots and interactive room image */
@@ -588,7 +605,243 @@ body {
   transform: translateY(-4px);
 }
 
+.challenge-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.modal-content {
+  background: #ffffff;
+  color: #111827;
+}
+
+.modal-header,
+.modal-title,
+.modal-body,
+.modal-body pre,
+.modal-body p,
+.modal-body li,
+.modal-body span {
+  color: #111827;
+}
+
+.modal-body pre {
+  background: #f8fafc;
+  color: #111827;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  white-space: pre-wrap;
+}
+
 @media (max-width: 600px) {
+  .challenge-answer-grid {
+    grid-template-columns: 1fr;
+  }
   .slot { width: 72px; height: 72px; }
   .palette-item { width: 52px; height: 52px; }
+}
+
+.dicarlo-panel {
+  background: rgba(2, 16, 24, 0.92);
+  border: 2px solid rgba(96, 165, 250, 0.9);
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.15), 0 25px 50px rgba(4, 18, 32, 0.5);
+}
+
+.dicarlo-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.dicarlo-field {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+  min-height: 480px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(10, 57, 37, 0.9), rgba(10, 57, 37, 0.68));
+  border: 2px solid rgba(96, 165, 250, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.dicarlo-field::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-radius: 18px;
+  pointer-events: none;
+}
+
+.field-slot {
+  position: relative;
+  z-index: 1;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 16px;
+  border: 2px solid rgba(96, 165, 250, 0.9);
+  background: rgba(25, 38, 55, 0.25);
+  color: #dbeafe;
+  text-align: center;
+  backdrop-filter: blur(1px);
+}
+
+.field-slot.empty {
+  opacity: 0.9;
+}
+
+.field-slot.filled {
+  background: rgba(147, 197, 253, 0.18);
+  border-color: rgba(147, 197, 253, 0.9);
+}
+
+.slot-label {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #dbeafe;
+}
+
+.slot-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.slot-mini {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #dbeafe;
+}
+
+.dicarlo-clue-box {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.clue-header {
+  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  font-weight: 700;
+}
+
+.clue-text {
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.dicarlo-bottom-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+.plantilla-panel {
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.plantilla-panel h3 {
+  margin: 0 0 0.85rem;
+  font-size: 1.1rem;
+  color: #e2e8f0;
+}
+
+.plantilla-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.plantilla-player {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.8rem;
+  min-width: 120px;
+  border-radius: 12px;
+  background: rgba(147, 197, 253, 0.12);
+  border: 1px solid rgba(147, 197, 253, 0.35);
+  color: #e2e8f0;
+}
+
+.plantilla-player span {
+  font-weight: 700;
+}
+
+.plantilla-player small {
+  color: rgba(191, 219, 254, 0.9);
+}
+
+.plantilla-empty {
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.dicarlo-form {
+  margin-top: 0;
+}
+
+.dicarlo-input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dicarlo-input-row .form-control {
+  flex: 1;
+}
+
+.dicarlo-input-row .btn {
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  padding: 0;
+  font-size: 1.3rem;
+}
+
+.dicarlo-continue {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 767px) {
+  .dicarlo-field {
+    grid-template-columns: 1fr;
+  }
+
+  .dicarlo-bottom-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dicarlo-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dicarlo-input-row .btn {
+    width: 100%;
+  }
 }

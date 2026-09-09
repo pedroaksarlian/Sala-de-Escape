@@ -22,23 +22,8 @@
             <p>Memorizar y reproducir el camino: hacé clic en las casillas desde la columna izquierda hasta la derecha siguiendo el recorrido mostrado.</p>
 
             <div class="maze-controls">
-                <label>Filas:</label>
-                <select id="rowsSelect">
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6" selected>6</option>
-                    <option value="7">7</option>
-                </select>
-                <label>Columnas:</label>
-                <select id="colsSelect">
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8" selected>8</option>
-                    <option value="9">9</option>
-                </select>
                 <button id="newPathBtn" class="btn btn-sm btn-outline-light">Generar camino</button>
                 <button id="revealPathBtn" class="btn btn-sm btn-outline-light">Mostrar camino</button>
-                <div id="errorsDisplay" style="margin-left:12px;font-weight:700;color:#fecaca">Errores: 0</div>
             </div>
 
             <div id="mazeGrid" class="maze-grid" aria-label="Grilla del laberinto"></div>

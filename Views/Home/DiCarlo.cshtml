@@ -2,15 +2,20 @@
     ViewData["Title"] = "Di Carlo";
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
+    var jugadores = ViewBag.Jugadores as List<TP06.Models.JugadorDiCarlo> ?? new List<TP06.Models.JugadorDiCarlo>();
+    var plantilla = ViewBag.Plantilla as List<TP06.Models.JugadorDiCarlo> ?? new List<TP06.Models.JugadorDiCarlo>();
+    var objetivo = ViewBag.Objetivo as TP06.Models.JugadorDiCarlo;
+    var tablero = ViewBag.Tablero as List<dynamic> ?? new List<dynamic>();
+    var equipoCompleto = ViewBag.EquipoCompleto is bool value2 && value2;
 }
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
-    <div class="challenge-panel">
+    <div class="challenge-panel dicarlo-panel">
         <span class="badge">Desafío 7 · Di Carlo</span>
-        <h1>7a0 contra leyendas</h1>
+        <h1>Plantilla imposible</h1>
         <p>
-            Un solo partido contra leyendas de River. El partido se complica con situaciones inesperadas y podés perderlo. Elegí la decisión que más ayuda a sostener el 7a0.
+            Adiviná al jugador correcto a partir de la pista y completá la formación del equipo.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
@@ -18,14 +23,74 @@
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
 
-        <div class="scenario-box">
-            <p>Situación: el equipo está bajo presión y el rival llegó al área. La pelota no sale limpia y una presión feroz está por matar el partido.</p>
-        </div>
+        <div class="dicarlo-shell">
+            <div class="dicarlo-field">
+                @foreach (var slot in tablero)
+                {
+                    var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                    <div class="field-slot @(jugador != null ? "filled" : "empty")">
+                        @if (jugador != null)
+                        {
+                            <span class="slot-name">@jugador.Nombre</span>
+                            <span class="slot-mini">@jugador.Posicion</span>
+                        }
+                        else
+                        {
+                            <span class="slot-label">@slot.Label</span>
+                        }
+                    </div>
+                }
+            </div>
 
-        <form asp-controller="Home" asp-action="DiCarlo" method="post" class="challenge-form">
-            <label for="respuesta">Tu decisión</label>
-            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: PRESIONAR" />
-            <button type="submit" class="btn btn-danger">Resolver</button>
-        </form>
+            <div class="dicarlo-clue-box">
+                @if (objetivo != null)
+                {
+                    <div class="clue-header">Pista del jugador a adivinar</div>
+                    <div class="clue-text">@objetivo.Adivinanza</div>
+                }
+                else
+                {
+                    <div class="clue-header">¡Equipo completo!</div>
+                    <div class="clue-text">Ya descubriste a todos los jugadores.</div>
+                }
+            </div>
+
+            <div class="dicarlo-bottom-row">
+                <div class="plantilla-panel">
+                    <h3>Plantilla</h3>
+                    <div class="plantilla-list">
+                        @if (plantilla.Count == 0)
+                        {
+                            <span class="plantilla-empty">Todavía no agregaste jugadores.</span>
+                        }
+                        else
+                        {
+                            @foreach (var jugador in plantilla)
+                            {
+                                <div class="plantilla-player">
+                                    <span>@jugador.Nombre</span>
+                                    <small>@jugador.Posicion</small>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <form asp-controller="Home" asp-action="DiCarlo" method="post" class="challenge-form dicarlo-form">
+                    <label for="respuesta">Jugador</label>
+                    <div class="dicarlo-input-row">
+                        <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Escribí el nombre completo" />
+                        <button type="submit" class="btn btn-danger">✓</button>
+                    </div>
+                </form>
+            </div>
+
+            @if (equipoCompleto)
+            {
+                <div class="dicarlo-continue">
+                    <a asp-controller="Home" asp-action="Ganaste" class="btn btn-success btn-lg">Continuar con el escape</a>
+                </div>
+            }
+        </div>
     </div>
 </div>

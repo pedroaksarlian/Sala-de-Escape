@@ -17,7 +17,7 @@
         {
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
-
+        
         <div class="audio-box mb-3">
             <audio controls preload="none" class="w-100">
                 <source src="@Url.Content("~/audio/Falls du entkommen willst.mp3")" type="audio/mpeg" />
@@ -32,8 +32,12 @@
         </div>
 
         <form asp-controller="Home" asp-action="Demichelis" method="post" class="challenge-form">
-            <label for="respuesta">Frase decodificada</label>
-            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Escribí la frase en español" />
+            <label>Frase decodificada</label>
+            <div class="challenge-answer-grid">
+                <input name="palabra1" type="text" class="form-control" placeholder="Palabra 1" maxlength="30" />
+                <input name="palabra2" type="text" class="form-control" placeholder="Palabra 2" maxlength="30" />
+                <input name="palabra3" type="text" class="form-control" placeholder="Palabra 3" maxlength="30" />
+            </div>
             <button type="submit" class="btn btn-danger mt-2">Resolver</button>
         </form>
 
@@ -72,11 +76,11 @@
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="textoModalLabel">Mensaje de Germán (alemán)</h5>
+                        <h5 class="modal-title" id="textoModalLabel">Mensaje de Micho</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <pre style="white-space:pre-wrap;">Pezzella, wenn du das hier hörst, bedeutet das, dass du es endlich bis zu mir geschafft hast. Aber ich habe nicht viel Zeit, dir zu helfen. Es gibt einen Weg, aus dem Trainingsgelände zu entkommen, aber du musst ihn selbst herausfinden.
+                        <pre>Pezzella, wenn du das hier hörst, bedeutet das, dass du es endlich bis zu mir geschafft hast. Aber ich habe nicht viel Zeit, dir zu helfen. Es gibt einen Weg, aus dem Trainingsgelände zu entkommen, aber du musst ihn selbst herausfinden.
 Hör gut zu: Du musst die Tür finden, dann den Schlüssel suchen und schließlich den Ausgang finden.
 Denk an diese drei Wörter. Wenn du es schaffst, sie richtig zu übersetzen, bist du der Flucht einen Schritt näher.
 Viel Glück, Germán
