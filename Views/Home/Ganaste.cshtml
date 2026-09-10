@@ -1,6 +1,9 @@
 @{
     ViewData["Title"] = "¡Ganaste!";
+    var codigoSesion = TempData["CodigoSesion"] as string;
 }
+
+@Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
 
 <div class="challenge-page">
     <div class="challenge-panel text-center">
@@ -14,6 +17,13 @@
             Felicitaciones: ganaste la sala de escape.
         </div>
 
-        <a asp-controller="Home" asp-action="Index" class="btn btn-danger btn-lg">Volver al inicio</a>
+        @if (!string.IsNullOrWhiteSpace(codigoSesion))
+        {
+            <div class="alert alert-info">
+                <strong>Tu código de sesión completada:</strong> <code>@codigoSesion</code>
+                <br />
+                <small>Guardalo como constancia de tu victoria.</small>
+            </div>
+        }
     </div>
 </div>

@@ -4,6 +4,8 @@
     var correcto = ViewBag.Correcto is bool value && value;
 }
 
+@Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
+
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
     <div class="challenge-panel">

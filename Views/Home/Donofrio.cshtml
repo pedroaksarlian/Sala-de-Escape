@@ -2,15 +2,21 @@
     ViewData["Title"] = "Donofrio / Gallardo";
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
+    var objetivo = ViewBag.Objetivo as TP06.Models.JugadorDiCarlo;
+    var tablero = ViewBag.Tablero as List<dynamic> ?? new List<dynamic>();
+    var equipoCompleto = ViewBag.EquipoCompleto is bool value2 && value2;
 }
+
+@Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
-    <div class="challenge-panel">
+
+    <div class="challenge-panel donofrio-panel">
         <span class="badge">Desafío 6 · Donofrio + Gallardo</span>
-        <h1>Fútbol 11</h1>
+        <h1>Armar el equipo</h1>
         <p>
-            El equipo tiene que armarse bien. Pensá en equilibrio, juego por el centro y una presión que no se rompa. ¿Qué formación encaja mejor?
+            Adiviná a cada jugador por la pista y completá la formación del once.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
@@ -18,10 +24,55 @@
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
 
-        <form asp-controller="Home" asp-action="Donofrio" method="post" class="challenge-form">
-            <label for="respuesta">Formación ideal</label>
-            <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Ej: 4-3-3" />
-            <button type="submit" class="btn btn-danger">Resolver</button>
-        </form>
+        <div class="donofrio-clue-box">
+            @if (objetivo != null)
+            {
+                <div class="clue-header">Pista del próximo jugador</div>
+                <div class="clue-text">@objetivo.Adivinanza</div>
+            }
+            else
+            {
+                <div class="clue-header">¡Equipo completo!</div>
+                <div class="clue-text">Ya descubriste a todos los jugadores y la formación quedó armada.</div>
+            }
+        </div>
+
+        <div class="donofrio-shell">
+            <div class="donofrio-board">
+                @foreach (var slot in tablero)
+                {
+                    var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                    var slotClass = slot.CssClass?.ToString() ?? string.Empty;
+
+                    <div class="donofrio-slot @(jugador != null ? "filled" : "empty") @slotClass">
+                        @if (jugador != null)
+                        {
+                            <span class="slot-name">@jugador.Nombre</span>
+                            <span class="slot-mini">@jugador.Posicion</span>
+                        }
+                        else
+                        {
+                            <span class="slot-label">@slot.Label</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="donofrio-input-row">
+                <form asp-controller="Home" asp-action="Donofrio" method="post" class="donofrio-form">
+                    <div class="donofrio-input-box">
+                        <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Type the footballer here" />
+                        <button type="submit" class="btn btn-danger">✓</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (equipoCompleto)
+        {
+            <div class="dicarlo-continue">
+                <a asp-controller="Home" asp-action="DiCarlo" class="btn btn-success btn-lg">Continuar</a>
+            </div>
+        }
     </div>
 </div>

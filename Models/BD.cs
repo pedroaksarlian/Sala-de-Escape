@@ -16,45 +16,66 @@ public class BD
 
     public int? ObtenerSalaActual(string nombreParticipante)
     {
-        using var connection = new SqlConnection(_connectionString);
-        return connection.QuerySingleOrDefault<int?>(
-            "SELECT TOP 1 IdSala FROM Partida WHERE NombreParticipante = @NombreParticipante ORDER BY Id DESC",
-            new { NombreParticipante = nombreParticipante });
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.QuerySingleOrDefault<int?>(
+                "SELECT TOP 1 IdSala FROM Partida WHERE NombreParticipante = @NombreParticipante ORDER BY Id DESC",
+                new { NombreParticipante = nombreParticipante });
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public bool ValidarAccesoSala(string nombreParticipante, int idSala)
     {
-        using var connection = new SqlConnection(_connectionString);
-        var sala = connection.QuerySingleOrDefault<int?>(
-            "SELECT TOP 1 IdSala FROM Partida WHERE NombreParticipante = @NombreParticipante AND IdSala = @IdSala ORDER BY Id DESC",
-            new { NombreParticipante = nombreParticipante, IdSala = idSala });
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var sala = connection.QuerySingleOrDefault<int?>(
+                "SELECT TOP 1 IdSala FROM Partida WHERE NombreParticipante = @NombreParticipante AND IdSala = @IdSala ORDER BY Id DESC",
+                new { NombreParticipante = nombreParticipante, IdSala = idSala });
 
-        return sala.HasValue;
+            return sala.HasValue;
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     public bool RegistrarSalaActual(string nombreParticipante, int idSala)
     {
-        using var connection = new SqlConnection(_connectionString);
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
 
-        var exists = connection.ExecuteScalar<int>(
-            "SELECT COUNT(1) FROM Partida WHERE NombreParticipante = @NombreParticipante AND IdSala = @IdSala",
-            new { NombreParticipante = nombreParticipante, IdSala = idSala });
+            var exists = connection.ExecuteScalar<int>(
+                "SELECT COUNT(1) FROM Partida WHERE NombreParticipante = @NombreParticipante AND IdSala = @IdSala",
+                new { NombreParticipante = nombreParticipante, IdSala = idSala });
 
-        if (exists > 0)
+            if (exists > 0)
+            {
+                return true;
+            }
+
+            var affected = connection.Execute(
+                "INSERT INTO Partida (NombreParticipante, FechaInicio, IdSala) VALUES (@NombreParticipante, @FechaInicio, @IdSala)",
+                new
+                {
+                    NombreParticipante = nombreParticipante,
+                    FechaInicio = DateTime.Today,
+                    IdSala = idSala
+                });
+
+            return affected > 0;
+        }
+        catch
         {
             return true;
         }
-
-        var affected = connection.Execute(
-            "INSERT INTO Partida (NombreParticipante, FechaInicio, IdSala) VALUES (@NombreParticipante, @FechaInicio, @IdSala)",
-            new
-            {
-                NombreParticipante = nombreParticipante,
-                FechaInicio = DateTime.Today,
-                IdSala = idSala
-            });
-
-        return affected > 0;
     }
 
     public List<string> ObtenerPalabrasDemichelis()
@@ -111,8 +132,65 @@ public class BD
         }
     }
 
-    public void GuardarCodigo(string codigo, string progreso)
+    public void GuardarCodigo(string codigo, string nombreParticipante, string progreso, int tiempoRestanteSegundos = 1800)
     {
-        // No se usa por ahora; la aplicación no tiene tabla de códigos.
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var exists = connection.ExecuteScalar<int>(
+                "SELECT COUNT(1) FROM CodigosSesion WHERE Codigo = @Codigo",
+                new { Codigo = codigo });
+
+            if (exists > 0)
+            {
+                connection.Execute(
+                    "UPDATE CodigosSesion SET Progreso = @Progreso, TiempoRestanteSegundos = @TiempoRestanteSegundos, FechaUltimaActualizacion = @Fecha WHERE Codigo = @Codigo",
+                    new
+                    {
+                        Codigo = codigo,
+                        Progreso = progreso,
+                        TiempoRestanteSegundos = tiempoRestanteSegundos,
+                        Fecha = DateTime.Now
+                    });
+            }
+            else
+            {
+                connection.Execute(
+                    "INSERT INTO CodigosSesion (Codigo, NombreParticipante, Progreso, TiempoRestanteSegundos, FechaCreacion, FechaUltimaActualizacion) VALUES (@Codigo, @NombreParticipante, @Progreso, @TiempoRestanteSegundos, @Fecha, @Fecha)",
+                    new
+                    {
+                        Codigo = codigo,
+                        NombreParticipante = nombreParticipante,
+                        Progreso = progreso,
+                        TiempoRestanteSegundos = tiempoRestanteSegundos,
+                        Fecha = DateTime.Now
+                    });
+            }
+        }
+        catch
+        {
+            // La base no está disponible. La app sigue funcionando sin persistir códigos.
+        }
+    }
+
+    public (string NombreParticipante, string Progreso, int TiempoRestanteSegundos)? RecuperarProgresoPorCodigo(string codigo)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            var result = connection.QuerySingleOrDefault<dynamic>(
+                "SELECT NombreParticipante, Progreso, TiempoRestanteSegundos FROM CodigosSesion WHERE Codigo = @Codigo",
+                new { Codigo = codigo });
+
+            if (result == null)
+                return null;
+
+            return (result.NombreParticipante, result.Progreso, result.TiempoRestanteSegundos);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

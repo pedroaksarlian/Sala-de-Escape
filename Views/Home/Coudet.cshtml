@@ -5,6 +5,7 @@
     var attempts = ViewBag.Attempts is int attemptsValue ? attemptsValue : 0;
     var diceText = ViewBag.Dice as string;
     var heldText = ViewBag.Held as string;
+    var codigoSesion = TempData["CodigoSesion"] as string;
     var diceValues = string.IsNullOrWhiteSpace(diceText)
         ? new[] { 1, 2, 3, 4, 5 }
         : diceText
@@ -13,18 +14,29 @@
             .ToArray();
 }
 
+@Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
+
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
     <div class="challenge-panel">
         <span class="badge">Desafío 1 · Coudet</span>
         <h1>Generala a lo bruto</h1>
         <p>
-            Seleccioná los dados que querés mantener. Los dados bloqueados quedan fijos durante 3 tiradas y se desbloquean en la 4ta.
+            Seleccioná los dados que querés mantener. Cada 3 tiradas sin lograr la generala, todos los dados se randomizarán de nuevo y tendrás que empezar de cero.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
         {
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(codigoSesion))
+        {
+            <div class="alert alert-info">
+                <strong>Código de progreso guardado:</strong> <code>@codigoSesion</code>
+                <br />
+                <small>Guardalo para continuar desde otro dispositivo o momento.</small>
+            </div>
         }
 
         <div class="dice-status">
@@ -109,10 +121,6 @@
             die.addEventListener('click', () => {
                 const willLock = !state.locked[index];
 
-                if (!willLock) {
-                    state.dice[index] = Math.floor(Math.random() * 6) + 1;
-                }
-
                 state.locked[index] = willLock;
                 state.holdTurns[index] = willLock ? 3 : 0;
                 renderDice();
@@ -122,20 +130,28 @@
         rollButton.addEventListener('click', () => {
             state.attempts += 1;
 
-            state.dice = state.dice.map((value, index) => {
-                if (state.locked[index]) {
-                    return value;
-                }
+            // Si llegamos a múltiplo de 3, reseteamos todo
+            if (state.attempts % 3 === 0) {
+                state.dice = state.dice.map(() => Math.floor(Math.random() * 6) + 1);
+                state.locked = Array(5).fill(false);
+                state.holdTurns = Array(5).fill(0);
+            } else {
+                // Tirada normal
+                state.dice = state.dice.map((value, index) => {
+                    if (state.locked[index]) {
+                        return value;
+                    }
 
-                return Math.floor(Math.random() * 6) + 1;
-            });
+                    return Math.floor(Math.random() * 6) + 1;
+                });
 
-            state.locked = state.locked.map((isLocked, index) => {
-                if (!isLocked) return false;
+                state.locked = state.locked.map((isLocked, index) => {
+                    if (!isLocked) return false;
 
-                state.holdTurns[index] -= 1;
-                return state.holdTurns[index] > 0;
-            });
+                    state.holdTurns[index] -= 1;
+                    return state.holdTurns[index] > 0;
+                });
+            }
 
             renderDice();
         });

@@ -1,6 +1,8 @@
 ﻿@{
     ViewData["Title"] = "Escape Room - Pezzela";
     var progress = ViewBag.Progress as List<string> ?? new List<string>();
+    var mensajeError = TempData["mensajeError"] as string;
+    var mensajeExito = TempData["mensajeExito"] as string;
 }
 
 <div class="game-shell">
@@ -12,23 +14,37 @@
             Cada prueba deja una pista, cada pista te acerca a la puerta de salida.
         </p>
 
+        @if (!string.IsNullOrWhiteSpace(mensajeError))
+        {
+            <div class="alert alert-danger">@mensajeError</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(mensajeExito))
+        {
+            <div class="alert alert-success">@mensajeExito</div>
+        }
+
         <div class="hero-actions">
-            <a asp-controller="Home" asp-action="Coudet" class="btn btn-danger btn-lg">Arrancar el escape</a>
+            <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Arrancar el escape</a>
+
+            <form asp-controller="Home" asp-action="CargarProgreso" method="post" class="d-flex gap-2 flex-wrap justify-content-center">
+                <input type="text" name="codigoSesion" class="form-control form-control-lg" placeholder="Ingresar código de progreso guardado" title="Código de 8 caracteres generado al completar desafíos" />
+                <button type="submit" class="btn btn-outline-light btn-lg">Cargar progreso</button>
+            </form>
 
             <form asp-controller="Home" asp-action="Continuar" method="post" class="d-flex gap-2 flex-wrap justify-content-center">
-                <input type="text" name="codigo" class="form-control form-control-lg" placeholder="Ingresá tu código" />
-                <button type="submit" class="btn btn-outline-light btn-lg">Continuar</button>
+                <input type="text" name="codigo" class="form-control form-control-lg" placeholder="Código de desafío (CANTILO, VESTUARIO, etc.)" />
+                <button type="submit" class="btn btn-outline-info btn-lg">Acceder a desafío</button>
             </form>
         </div>
-    </div>
 
-    <div class="progress-panel">
-        <div class="progress-header">
-            <h3>Progreso del escape</h3>
-            <span class="progress-pill">@ViewBag.CompletedCount / 7 salas</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: @(ViewBag.CompletedCount != null ? ((int)ViewBag.CompletedCount * 100 / 7) : 0)%"></div>
+        <div class="progress-panel">
+            <div class="progress-header">
+                <h3>Progreso del escape</h3>
+                <span class="progress-pill">@ViewBag.CompletedCount / 7 salas</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: @(ViewBag.CompletedCount != null ? ((int)ViewBag.CompletedCount * 100 / 7) : 0)%"></div>
+            </div>
         </div>
     </div>
 </div>
