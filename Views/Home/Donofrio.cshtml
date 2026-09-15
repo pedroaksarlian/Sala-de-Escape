@@ -2,6 +2,7 @@
     ViewData["Title"] = "Donofrio / Gallardo";
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
+    var plantilla = ViewBag.Plantilla as List<TP06.Models.JugadorDiCarlo> ?? new List<TP06.Models.JugadorDiCarlo>();
     var objetivo = ViewBag.Objetivo as TP06.Models.JugadorDiCarlo;
     var tablero = ViewBag.Tablero as List<dynamic> ?? new List<dynamic>();
     var equipoCompleto = ViewBag.EquipoCompleto is bool value2 && value2;
@@ -24,19 +25,6 @@
             <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
         }
 
-        <div class="donofrio-clue-box">
-            @if (objetivo != null)
-            {
-                <div class="clue-header">Pista del próximo jugador</div>
-                <div class="clue-text">@objetivo.Adivinanza</div>
-            }
-            else
-            {
-                <div class="clue-header">¡Equipo completo!</div>
-                <div class="clue-text">Ya descubriste a todos los jugadores y la formación quedó armada.</div>
-            }
-        </div>
-
         <div class="donofrio-shell">
             <div class="donofrio-board">
                 @foreach (var slot in tablero)
@@ -56,16 +44,41 @@
                         }
                     </div>
                 }
+
+                @if (plantilla.Count > 0)
+                {
+                    <div class="donofrio-team-list">
+                        @foreach (var jugador in plantilla)
+                        {
+                            <div class="donofrio-team-item">
+                                <span>@jugador.Nombre</span>
+                                <small>@jugador.Posicion</small>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
 
-            <div class="donofrio-input-row">
-                <form asp-controller="Home" asp-action="Donofrio" method="post" class="donofrio-form">
-                    <div class="donofrio-input-box">
-                        <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Type the footballer here" />
-                        <button type="submit" class="btn btn-danger">✓</button>
-                    </div>
-                </form>
+            <div class="donofrio-clue-box" style="padding: 1rem 1.1rem; border-radius: 16px; background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(148, 163, 184, 0.22);">
+                @if (objetivo != null)
+                {
+                    <div class="clue-header" style="margin-bottom: 0.5rem; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: #93c5fd; font-weight: 700;">Pista del próximo jugador</div>
+                    <div class="clue-text" style="color: #e2e8f0; line-height: 1.6;">@objetivo.Adivinanza</div>
+                }
+                else
+                {
+                    <div class="clue-header" style="margin-bottom: 0.5rem; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: #93c5fd; font-weight: 700;">¡Equipo completo!</div>
+                    <div class="clue-text" style="color: #e2e8f0; line-height: 1.6;">Ya descubriste a todos los jugadores y la formación quedó armada.</div>
+                }
             </div>
+
+            <form asp-controller="Home" asp-action="Donofrio" method="post" class="challenge-form donofrio-form" style="width: min(700px, 100%); margin: 0; display: flex; flex-direction: column; justify-content: center;">
+                <label for="respuesta" style="margin-bottom: 0.5rem; color: #e2e8f0; font-weight: 700;">Jugador</label>
+                <div class="donofrio-input-row" style="display: flex; align-items: center; gap: 0.75rem;">
+                    <input id="respuesta" name="respuesta" type="text" class="form-control" placeholder="Escribí el nombre completo" style="flex: 1; min-height: 56px; border-radius: 14px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.15); color: #f8fafc;" />
+                    <button type="submit" class="btn btn-danger" style="min-width: 56px; width: 56px; height: 56px; border-radius: 12px; padding: 0; font-size: 1.3rem; background: #fbbf24; border-color: #fbbf24; color: #111827; box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.25);">✓</button>
+                </div>
+            </form>
         </div>
 
         @if (equipoCompleto)

@@ -43,73 +43,50 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
-    @if (ViewBag.IntroVideo != null)
+    @if (!string.IsNullOrWhiteSpace(ViewBag.IntroVideo as string))
     {
-        <div class="modal fade" id="introVideoModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-fullscreen">
-                <div class="modal-content bg-transparent border-0">
-                    <div class="modal-header border-0">
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body p-0" style="position:relative;">
-                        <video id="introVideoPlayer" class="w-100 h-100" style="object-fit:cover; width:100vw; height:100vh;" playsinline autoplay muted preload="auto" controls>
-                            <source src="@ViewBag.IntroVideo" type="video/mp4" />
-                            Tu navegador no soporta video.
-                        </video>
-                        <button id="introVideoUnmute" type="button" class="btn btn-light" style="position:absolute;left:1rem;bottom:1rem;z-index:1055;display:none;">Activar sonido</button>
-                    </div>
-                </div>
-            </div>
+        <div id="introVideoOverlay" style="position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; background:#000;">
+            <video id="introVideoPlayer" autoplay muted playsinline preload="auto" style="width:100vw; height:100vh; object-fit:cover; background:#000; display:block;"></video>
         </div>
 
         <script>
-            $(function(){
+            document.addEventListener('DOMContentLoaded', function () {
                 try {
-                    var modalEl = document.getElementById('introVideoModal');
-                    var modal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                    var src = '@Url.Content((string)ViewBag.IntroVideo)';
+                    var overlay = document.getElementById('introVideoOverlay');
                     var v = document.getElementById('introVideoPlayer');
-                    var unmuteBtn = document.getElementById('introVideoUnmute');
 
-                    function showAndPlay() {
-                        // small delay to ensure CSS and focus state ready
-                        setTimeout(function(){ modal.show(); }, 50);
-                        v.currentTime = 0;
-                        // ensure muted initially so autoplay is allowed
-                        try { v.muted = true; } catch(e) {}
-                        var p = v.play();
-                        if (p !== undefined) {
-                            p.then(function(){
-                                // playing succeeded (muted). Offer unmute button
-                                try { unmuteBtn.style.display = 'inline-block'; } catch(e) {}
-                            }).catch(function(){
-                                // play failed even muted - try forced muted play
-                                try { v.muted = true; v.play().catch(function(){}); unmuteBtn.style.display = 'inline-block'; } catch(e) {}
-                            });
-                        } else {
-                            // no promise, show unmute control
-                            try { unmuteBtn.style.display = 'inline-block'; } catch(e) {}
-                        }
-                    }
+                    if (!src || !overlay || !v) return;
 
-                    // close when video ends
-                    v.addEventListener('ended', function(){ try { modal.hide(); } catch(e) {} });
+                    v.src = src;
+                    v.muted = true;
+                    v.load();
 
-                    // when modal hides pause and reset
-                    modalEl.addEventListener('hidden.bs.modal', function(){ try { v.pause(); v.currentTime = 0; v.muted = false; unmuteBtn.style.display = 'none'; } catch(e) {} });
-
-                    // unmute button
-                    if (unmuteBtn) {
-                        unmuteBtn.addEventListener('click', function(){
-                            try {
-                                v.muted = false;
-                                v.play().catch(function(){});
-                                unmuteBtn.style.display = 'none';
-                            } catch(e) {}
+                    var startPlayback = function () {
+                        v.muted = true;
+                        v.play().catch(function () {
+                            setTimeout(function () {
+                                try { v.muted = true; v.play().catch(function () {}); } catch (e) {}
+                            }, 250);
                         });
-                    }
+                    };
 
-                    showAndPlay();
-                } catch (e) { console && console.warn && console.warn(e); }
+                    v.addEventListener('loadeddata', function () {
+                        setTimeout(startPlayback, 100);
+                    });
+
+                    v.addEventListener('ended', function () {
+                        try { overlay.remove(); } catch (e) {}
+                    });
+
+                    v.addEventListener('error', function () {
+                        try { overlay.remove(); } catch (e) {}
+                    });
+
+                    setTimeout(startPlayback, 200);
+                } catch (e) {
+                    console && console.warn && console.warn(e);
+                }
             });
         </script>
     }
@@ -180,7 +157,7 @@
                     }
 
                 } catch (e) { console && console.warn && console.warn(e); reject(e); }
-            });
+            };
         };
     </script>
 </body>

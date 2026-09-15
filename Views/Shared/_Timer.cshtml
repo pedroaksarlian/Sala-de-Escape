@@ -11,8 +11,53 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let tiempoRestante = @tiempoRestante;
+    let isAutoSaving = false;
     const timerDisplay = document.getElementById('timerDisplay');
     const timerContainer = document.getElementById('timerContainer');
+
+    // Función para guardar el tiempo al servidor
+    function guardarTiempoAlServidor(segundos) {
+        if (isAutoSaving) return;
+        isAutoSaving = true;
+        fetch('/Home/GuardarTiempo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'tiempoSegundos=' + Math.max(0, segundos)
+        }).finally(() => {
+            isAutoSaving = false;
+        });
+    }
+
+    // Hacer la función disponible globalmente
+    window.guardarTiempoActual = function() {
+        guardarTiempoAlServidor(tiempoRestante);
+        return new Promise(resolve => {
+            setTimeout(resolve, 100);
+        });
+    };
+
+    // Interceptar forms para agregar el tiempo antes de submit
+    document.addEventListener('submit', function(event) {
+        const form = event.target;
+        // Crear o actualizar un input oculto con el tiempo actual
+        let tiempoInput = form.querySelector('input[name="tiempoRestanteSegundos"]');
+        if (!tiempoInput) {
+            tiempoInput = document.createElement('input');
+            tiempoInput.type = 'hidden';
+            tiempoInput.name = 'tiempoRestanteSegundos';
+            form.appendChild(tiempoInput);
+        }
+        tiempoInput.value = Math.max(0, tiempoRestante);
+    }, true);
+
+    // Guardar tiempo cuando se está a punto de dejar la página
+    window.addEventListener('beforeunload', function() {
+        if (tiempoRestante > 0) {
+            navigator.sendBeacon('/Home/GuardarTiempo', 'tiempoSegundos=' + tiempoRestante);
+        }
+    });
 
     function actualizarTimer() {
         const minutos = Math.floor(tiempoRestante / 60);
@@ -28,9 +73,11 @@ document.addEventListener('DOMContentLoaded', function() {
             timerDisplay.textContent = '0:00';
             timerContainer.style.borderColor = '#ff0000';
             timerContainer.style.backgroundColor = 'rgba(200, 0, 0, 0.9)';
+            // Guardar tiempo antes de redirigir
+            guardarTiempoAlServidor(0);
             // Reproducir video de derrota y avisar al servidor
             try {
-                window.playGlobalVideo('/videos/gameover.mp4').then(function(){
+                window.playGlobalVideo('/videos/Soccer_players_running_in_tunnel_20260910090754.mp4').then(function(){
                     // notificar al servidor que perdió y redirigir según respuesta
                     fetch('@Url.Action("Perder", "Home")', { method: 'POST' })
                         .then(r => r.json())
@@ -44,20 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         tiempoRestante--;
-
-        // Guardar tiempo cada 30 segundos
-        if (tiempoRestante % 30 === 0) {
-            fetch('/Home/GuardarTiempo', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: 'tiempoSegundos=' + tiempoRestante
-            });
-        }
     }
 
-    // Actualizar cada segundo
+    // Actualizar cada segundo (sin guardado automático)
     setInterval(actualizarTimer, 1000);
 });
 </script>
@@ -72,4 +108,3 @@ document.addEventListener('DOMContentLoaded', function() {
         transform: scale(1.05);
     }
 </style>
-

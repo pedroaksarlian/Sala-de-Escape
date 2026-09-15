@@ -11,6 +11,9 @@ public class HomeController : Controller
 {
     private const string ProgressKey = "escapeProgress";
     private const string WinKey = "escapeWon";
+    private const string IntroVideoPath = "/videos/Soccer_player_entering_prison_202609090817.mp4";
+    private const string AcunaIntroVideoPath = "/videos/Soccer_players_running_in_tunnel_20260910090754.mp4";
+    private const string GameOverVideoPath = "/videos/Soccer_players_running_in_tunnel_20260910090754.mp4";
     private static readonly string[] ChallengeOrder =
     {
         "Coudet",
@@ -92,14 +95,14 @@ public class HomeController : Controller
             _ => nameof(Index)
         };
 
-        // set intro video for the next room when navigating from the index/continuar form
-        if (string.Equals(dest, nameof(DiCarlo), StringComparison.OrdinalIgnoreCase))
+        // show intro video for specific rooms
+        if (string.Equals(dest, nameof(Coudet), StringComparison.OrdinalIgnoreCase))
         {
-            TempData["ShowIntro"] = "/videos/otro-video.mp4";
+            TempData["ShowIntro"] = IntroVideoPath;
         }
-        else if (!string.Equals(dest, nameof(Index), StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(dest, nameof(Acuna), StringComparison.OrdinalIgnoreCase))
         {
-            TempData["ShowIntro"] = "/videos/entrada-carcel.mp4";
+            TempData["ShowIntro"] = AcunaIntroVideoPath;
         }
 
         return RedirectToAction(dest);
@@ -134,21 +137,24 @@ public class HomeController : Controller
             dice = string.Join(',', initial);
         }
 
+        var sessionKey = GetIntroSessionKey(nameof(Coudet));
+        var shouldShowIntro = string.Equals(HttpContext.Session.GetString(sessionKey), "true", StringComparison.OrdinalIgnoreCase) ? false : true;
+        if (shouldShowIntro)
+        {
+            HttpContext.Session.SetString(sessionKey, "true");
+            ViewBag.IntroVideo = IntroVideoPath;
+        }
+        else
+        {
+            ViewBag.IntroVideo = null;
+        }
+
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Coudet";
         ViewBag.PartidaEnCurso = true;
-        // show intro only if navigated from another page (TempData) or explicit query param
-        if (TempData["ShowIntro"] != null)
-        {
-            ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        }
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"]))
-        {
-            ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
-        }
         ViewBag.Attempts = attempts;
         ViewBag.Dice = dice;
         ViewBag.Held = held;
@@ -157,8 +163,13 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public IActionResult Coudet(string accion, string dados, string held, int intentos)
+    public IActionResult Coudet(string accion, string dados, string held, int intentos, int? tiempoRestanteSegundos = null)
     {
+        if (tiempoRestanteSegundos.HasValue)
+        {
+            ActualizarTiempoDelFormulario(tiempoRestanteSegundos.Value);
+        }
+
         if (!CanAccessChallenge("Coudet"))
         {
             return RedirectToAction(nameof(Index));
@@ -242,14 +253,24 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        var sessionKey = GetIntroSessionKey(nameof(Acuna));
+        var shouldShowIntro = string.Equals(HttpContext.Session.GetString(sessionKey), "true", StringComparison.OrdinalIgnoreCase) ? false : true;
+        if (shouldShowIntro)
+        {
+            HttpContext.Session.SetString(sessionKey, "true");
+            ViewBag.IntroVideo = AcunaIntroVideoPath;
+        }
+        else
+        {
+            ViewBag.IntroVideo = null;
+        }
+
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Acuna";
         ViewBag.PartidaEnCurso = true;
-        if (TempData["ShowIntro"] != null) ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"])) ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
@@ -318,8 +339,6 @@ public class HomeController : Controller
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Demichelis";
         ViewBag.PartidaEnCurso = true;
-        if (TempData["ShowIntro"] != null) ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"])) ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
@@ -391,8 +410,6 @@ public class HomeController : Controller
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Tapia";
         ViewBag.PartidaEnCurso = true;
-        if (TempData["ShowIntro"] != null) ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"])) ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
@@ -482,8 +499,6 @@ public class HomeController : Controller
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Scaloni";
         ViewBag.PartidaEnCurso = true;
-        if (TempData["ShowIntro"] != null) ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"])) ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
@@ -591,8 +606,6 @@ public class HomeController : Controller
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Donofrio";
         ViewBag.PartidaEnCurso = true;
-        if (TempData["ShowIntro"] != null) ViewBag.IntroVideo = TempData["ShowIntro"] as string;
-        else if (!string.IsNullOrWhiteSpace(Request.Query["intro"])) ViewBag.IntroVideo = "/videos/entrada-carcel.mp4";
         ViewBag.Jugadores = jugadores;
         ViewBag.Plantilla = jugadoresAdivinados;
         ViewBag.Objetivo = objetivo;
@@ -758,22 +771,9 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        var jugadores = _bd.ObtenerJugadoresDiCarlo();
-        var plantilla = GetDiCarloPlantilla();
-        var jugadoresAdivinados = jugadores
-            .Where(j => plantilla.Contains(NormalizePlayerName(j.Nombre), StringComparer.OrdinalIgnoreCase))
-            .OrderBy(j => j.Id)
-            .ToList();
-
-        var objetivo = jugadores
-            .FirstOrDefault(j => !plantilla.Contains(NormalizePlayerName(j.Nombre), StringComparer.OrdinalIgnoreCase));
-
-        var equipoCompleto = jugadoresAdivinados.Count == jugadores.Count;
-        if (equipoCompleto)
-        {
-            SaveProgress("Di Carlo");
-            HttpContext.Session.SetString(WinKey, "true");
-        }
+        var state = GetDiCarloGameState();
+        var escenaActual = GetDiCarloEscena(state.Paso);
+        var equipo = GetEquipoDonofrioActual();
 
         ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
@@ -781,93 +781,182 @@ public class HomeController : Controller
         ViewBag.Participante = GetParticipanteActual();
         ViewBag.HabitacionActual = "Di Carlo";
         ViewBag.PartidaEnCurso = true;
-        ViewBag.Jugadores = jugadores;
-        ViewBag.Plantilla = jugadoresAdivinados;
-        ViewBag.Objetivo = objetivo;
-        ViewBag.Tablero = BuildDiCarloBoard(jugadoresAdivinados);
-        ViewBag.EquipoCompleto = equipoCompleto;
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
+        ViewBag.EquipoDonofrio = equipo;
+        ViewBag.Escena = escenaActual;
+        ViewBag.PartidoGanado = string.Equals(state.Estado, "ganado", StringComparison.OrdinalIgnoreCase);
+        ViewBag.PartidoPerdido = string.Equals(state.Estado, "perdido", StringComparison.OrdinalIgnoreCase);
+        ViewBag.DiCarloState = state;
         return View();
     }
 
     [HttpPost]
-    public IActionResult DiCarlo(string respuesta)
+    public IActionResult DiCarlo(string decision)
     {
         if (!CanAccessChallenge("Di Carlo"))
         {
             return RedirectToAction(nameof(Index));
         }
 
-        var jugadores = _bd.ObtenerJugadoresDiCarlo();
-        var plantilla = GetDiCarloPlantilla();
+        var state = GetDiCarloGameState();
+        var escenaActual = GetDiCarloEscena(state.Paso);
 
-        if (string.IsNullOrWhiteSpace(respuesta))
+        if (string.IsNullOrWhiteSpace(decision))
         {
-            TempData["mensaje"] = "Escribí el nombre del jugador que querés sumar a la plantilla.";
+            TempData["mensaje"] = "Elegí una opción para seguir jugando.";
             TempData["correcto"] = false;
             return RedirectToAction(nameof(DiCarlo));
         }
 
-        var respuestaNormalizada = NormalizePlayerName(respuesta);
-        var jugador = jugadores.FirstOrDefault(j => NormalizePlayerName(j.Nombre) == respuestaNormalizada);
+        var opcionElegida = NormalizeDecision(decision);
+        var opcionCorrecta = NormalizeDecision(escenaActual.Correcta);
 
-        if (jugador == null)
+        if (string.Equals(opcionElegida, opcionCorrecta, StringComparison.OrdinalIgnoreCase))
         {
-            TempData["mensaje"] = "Ese jugador no está en la base de datos. Revisá el nombre y probá otra vez.";
-            TempData["correcto"] = false;
-            return RedirectToAction(nameof(DiCarlo));
-        }
+            state.Paso += 1;
+            state.UltimaDecision = decision;
+            state.Mensaje = escenaActual.Exito;
 
-        var nombreNormalizado = NormalizePlayerName(jugador.Nombre);
-        if (plantilla.Contains(nombreNormalizado, StringComparer.OrdinalIgnoreCase))
-        {
-            TempData["mensaje"] = $"{jugador.Nombre} ya está en la plantilla.";
-            TempData["correcto"] = false;
-            return RedirectToAction(nameof(DiCarlo));
-        }
+            if (state.Paso >= GetDiCarloEscenas().Count)
+            {
+                state.Estado = "ganado";
+                SaveProgress("Di Carlo");
+                HttpContext.Session.SetString(WinKey, "true");
+                SetDiCarloGameState(state);
+                TempData["mensaje"] = "Ganaste el partido. La salida está abierta y podés escapar de la sala.";
+                TempData["correcto"] = true;
+                return RedirectToAction(nameof(Ganaste));
+            }
 
-        plantilla.Add(nombreNormalizado);
-        SetDiCarloPlantilla(plantilla);
-
-        var equipoCompleto = plantilla.Count == jugadores.Count;
-        if (equipoCompleto)
-        {
-            SaveProgress("Di Carlo");
-            HttpContext.Session.SetString(WinKey, "true");
-            TempData["mensaje"] = "Plantilla completa: ya tenés armado el equipo para continuar con el escape.";
+            SetDiCarloGameState(state);
+            TempData["mensaje"] = escenaActual.Exito;
             TempData["correcto"] = true;
-        }
-        else
-        {
-            TempData["mensaje"] = $"Acertaste: {jugador.Nombre} quedó sumado a la plantilla.";
-            TempData["correcto"] = true;
+            return RedirectToAction(nameof(DiCarlo));
         }
 
-        return RedirectToAction(nameof(DiCarlo));
+        state.Estado = "perdido";
+        state.Mensaje = escenaActual.Fracaso;
+        SetDiCarloGameState(state);
+
+        LimpiarSesion();
+        TempData["mensajeError"] = "Perdiste el partido. La sala se cerró.";
+        return RedirectToAction(nameof(Index));
     }
 
-    private List<string> GetDiCarloPlantilla()
+    private List<JugadorDiCarlo> GetEquipoDonofrioActual()
     {
-        var raw = HttpContext.Session.GetString("dicarloPlantilla") ?? string.Empty;
+        var equipo = GetDonofrioPlantilla();
+        if (equipo.Count == 0)
+        {
+            return new List<JugadorDiCarlo>();
+        }
+
+        var jugadores = GetDonofrioJugadores();
+        return jugadores
+            .Where(j => equipo.Contains(NormalizePlayerName(j.Nombre), StringComparer.OrdinalIgnoreCase))
+            .OrderBy(j => j.Id)
+            .ToList();
+    }
+
+    private DiCarloGameState GetDiCarloGameState()
+    {
+        var raw = HttpContext.Session.GetString("dicarloPartido");
         if (string.IsNullOrWhiteSpace(raw))
         {
-            return new List<string>();
+            return new DiCarloGameState();
         }
 
-        return raw.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<DiCarloGameState>(raw) ?? new DiCarloGameState();
+        }
+        catch
+        {
+            return new DiCarloGameState();
+        }
     }
 
-    private void SetDiCarloPlantilla(IEnumerable<string> nombres)
+    private void SetDiCarloGameState(DiCarloGameState state)
     {
-        var lista = nombres
-            .Select(NormalizePlayerName)
-            .Where(v => !string.IsNullOrWhiteSpace(v))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var json = System.Text.Json.JsonSerializer.Serialize(state);
+        HttpContext.Session.SetString("dicarloPartido", json);
+    }
 
-        HttpContext.Session.SetString("dicarloPlantilla", string.Join('|', lista));
+    private static List<DiCarloEscena> GetDiCarloEscenas()
+    {
+        return new List<DiCarloEscena>
+        {
+            new()
+            {
+                Titulo = "Falcao deja mano a mano a Julián Álvarez",
+                Texto = "Falcao hace una diagonal perfecta y deja a Julián Álvarez mano a mano con la defensa. Hay un ángulo para definir el partido.",
+                Opciones = new[] { "Patear a la izquierda", "Patear al centro", "Patear a la derecha" },
+                Correcta = "Patear a la derecha",
+                Exito = "Julián Álvarez encuentra el ángulo correcto y dispara a la derecha: el balón se mete en el ángulo y abrís el marcador.",
+                Fracaso = "Elegiste mal: la defensa adivina la jugada y el partido se pone cuesta arriba. Perdiste el partido y la sala se cerró."
+            },
+            new()
+            {
+                Titulo = "La contra llega con velocidad",
+                Texto = "El rival lo intenta de contra. La pelota llega a la línea del mediocampo y tenés que decidir por dónde salir para romper la presión.",
+                Opciones = new[] { "Pedir el centro", "Pase al mediocampo", "Buscar la pared" },
+                Correcta = "Pase al mediocampo",
+                Exito = "El pase al mediocampo corta la presión y armás una jugada clara para liquidar el partido.",
+                Fracaso = "La presión te ganó y el rival te sacó la pelota. Se te fue la chance de sentenciar y perdés el partido."
+            },
+            new()
+            {
+                Titulo = "Último minuto y definición",
+                Texto = "La defensa rival se desploma. El equipo te pide decidir entre un centro, un remate o un pase al hueco. La última decisión define el resultado.",
+                Opciones = new[] { "Centro al área", "Remate limpio", "Pase al hueco" },
+                Correcta = "Pase al hueco",
+                Exito = "El pase al hueco deja libre a Julián y lo define: gol del partido. Ganaste 3-0 y logras escapar.",
+                Fracaso = "La última decisión fue mala y el partido termina en derrota. El sueño de escapar se rompe."
+            }
+        };
+    }
+
+    private static DiCarloEscena GetDiCarloEscena(int paso)
+    {
+        var escenas = GetDiCarloEscenas();
+        var index = Math.Clamp(paso, 0, escenas.Count - 1);
+        return escenas[index];
+    }
+
+    private static string NormalizeDecision(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var normalized = value.Trim();
+        normalized = new string(normalized.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(ch => CharUnicodeInfo.GetUnicodeCategory(ch) != UnicodeCategory.NonSpacingMark
+                && !char.IsPunctuation(ch)
+                && !char.IsSymbol(ch)
+                && !char.IsControl(ch))
+            .ToArray());
+
+        return normalized.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
+    }
+
+    private sealed class DiCarloEscena
+    {
+        public string Titulo { get; set; } = string.Empty;
+        public string Texto { get; set; } = string.Empty;
+        public string[] Opciones { get; set; } = Array.Empty<string>();
+        public string Correcta { get; set; } = string.Empty;
+        public string Exito { get; set; } = string.Empty;
+        public string Fracaso { get; set; } = string.Empty;
+    }
+
+    private sealed class DiCarloGameState
+    {
+        public int Paso { get; set; } = 0;
+        public string Estado { get; set; } = "jugando";
+        public string? UltimaDecision { get; set; }
+        public string? Mensaje { get; set; }
     }
 
     private static List<DiCarloSlot> BuildDiCarloBoard(List<JugadorDiCarlo> jugadoresAdivinados)
@@ -938,15 +1027,34 @@ public class HomeController : Controller
         }
 
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+        // Guardar el tiempo final de victoria
+        GuardarTiempoRestante(tiempoRestante);
         ViewBag.Progress = GetProgress();
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
 
     [HttpPost]
-    public IActionResult GuardarTiempo(int tiempoSegundos)
+    public IActionResult Perder()
     {
-        var tiempoRestante = Math.Max(0, tiempoSegundos);
+        // Guardar el tiempo final (0 porque se acabó)
+        GuardarTiempoRestante(0);
+        LimpiarSesion();
+        TempData["mensajeError"] = "Se acabó el tiempo. La partida finalizo.";
+        return Json(new { redirect = Url.Action(nameof(Index)) });
+    }
+
+    [HttpPost]
+    public IActionResult GuardarTiempo(int? tiempoSegundos)
+    {
+        if (!tiempoSegundos.HasValue)
+        {
+            var tiempoActual = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+            GuardarTiempoRestante(Math.Max(0, tiempoActual));
+            return Ok();
+        }
+
+        var tiempoRestante = Math.Max(0, tiempoSegundos.Value);
         HttpContext.Session.SetInt32("tiempoRestanteSegundos", tiempoRestante);
         GuardarTiempoRestante(tiempoRestante);
         return Ok();
@@ -960,7 +1068,9 @@ public class HomeController : Controller
             return new List<string>();
         }
 
-        return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().ToList();
+        return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void SaveProgress(string challenge)
@@ -973,24 +1083,33 @@ public class HomeController : Controller
             progress.Add(challenge);
             var progressStr = string.Join(',', progress);
             HttpContext.Session.SetString(ProgressKey, progressStr);
-            
+
             var nombreParticipante = GetParticipanteActual();
             var codigoActual = HttpContext.Session.GetString("codigoActual");
             var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
-            
-            // Si no hay código, generar uno nuevo
+
             if (string.IsNullOrWhiteSpace(codigoActual))
             {
                 codigoActual = GenerarCodigoUnico();
                 HttpContext.Session.SetString("codigoActual", codigoActual);
             }
-            
-            // Guardar o actualizar el código con el nuevo progreso y tiempo
+
             _bd.GuardarCodigo(codigoActual, nombreParticipante, progressStr, tiempoRestante);
-            
-            // Pasar el código a la siguiente vista para mostrar al usuario
+            GuardarTiempoRestante(tiempoRestante);
             TempData["CodigoSesion"] = codigoActual;
         }
+    }
+
+    private void GuardarTiempoActualSiHayCodigo()
+    {
+        var codigoActual = HttpContext.Session.GetString("codigoActual");
+        if (string.IsNullOrWhiteSpace(codigoActual))
+        {
+            return;
+        }
+
+        var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+        GuardarTiempoRestante(Math.Max(0, tiempoRestante));
     }
 
     private void GuardarTiempoRestante(int tiempoSegundos)
@@ -1016,20 +1135,25 @@ public class HomeController : Controller
         HttpContext.Session.Remove("tiempoRestanteSegundos");
         HttpContext.Session.Remove("donofrioPlantilla");
         HttpContext.Session.Remove("dicarloPlantilla");
+        HttpContext.Session.Remove("dicarloPartido");
+
+        foreach (var room in ChallengeOrder)
+        {
+            HttpContext.Session.Remove(GetIntroSessionKey(room));
+        }
     }
 
     private string GenerarCodigoUnico()
     {
         const string caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = new Random();
-        var codigo = new System.Text.StringBuilder();
-        
-        // Generar código de 8 caracteres
+        var codigo = new StringBuilder();
+
         for (int i = 0; i < 8; i++)
         {
             codigo.Append(caracteres[random.Next(caracteres.Length)]);
         }
-        
+
         return codigo.ToString();
     }
 
@@ -1093,16 +1217,16 @@ public class HomeController : Controller
                     _ => nameof(Index)
                 };
 
-                // mark intro video for next room
-                if (string.Equals(next, nameof(DiCarlo), StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(next, nameof(Coudet), StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ShowIntro"] = "/videos/otro-video.mp4";
+                    TempData["ShowIntro"] = IntroVideoPath;
                 }
-                else if (!string.Equals(next, nameof(Index), StringComparison.OrdinalIgnoreCase))
+                else if (string.Equals(next, nameof(Acuna), StringComparison.OrdinalIgnoreCase))
                 {
-                    TempData["ShowIntro"] = "/videos/entrada-carcel.mp4";
+                    TempData["ShowIntro"] = AcunaIntroVideoPath;
                 }
 
+                GuardarTiempoActualSiHayCodigo();
                 return RedirectToAction(next);
             }
         }
@@ -1134,5 +1258,51 @@ public class HomeController : Controller
         }
 
         return nombre;
+    }
+
+    private void ActualizarTiempoDelFormulario(int? tiempoRestanteSegundos)
+    {
+        if (!tiempoRestanteSegundos.HasValue)
+        {
+            return;
+        }
+
+        var tiempoRestante = Math.Max(0, tiempoRestanteSegundos.Value);
+        HttpContext.Session.SetInt32("tiempoRestanteSegundos", tiempoRestante);
+    }
+
+    private static string GetIntroSessionKey(string roomName)
+    {
+        return $"introShown_{roomName}";
+    }
+
+    private static string? GetIntroVideoForRoom(string roomName)
+    {
+        return roomName switch
+        {
+            "Coudet" => IntroVideoPath,
+            "Acuna" => AcunaIntroVideoPath,
+            _ => null
+        };
+    }
+
+    private void ConfigureRoomIntro(string roomName)
+    {
+        var videoPath = GetIntroVideoForRoom(roomName);
+        if (string.IsNullOrWhiteSpace(videoPath))
+        {
+            ViewBag.IntroVideo = null;
+            return;
+        }
+
+        var sessionKey = GetIntroSessionKey(roomName);
+        if (string.Equals(HttpContext.Session.GetString(sessionKey), "true", StringComparison.OrdinalIgnoreCase))
+        {
+            ViewBag.IntroVideo = null;
+            return;
+        }
+
+        HttpContext.Session.SetString(sessionKey, "true");
+        ViewBag.IntroVideo = videoPath;
     }
 }
