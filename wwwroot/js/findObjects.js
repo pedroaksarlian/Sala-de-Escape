@@ -125,7 +125,29 @@ document.addEventListener('DOMContentLoaded', function () {
         form.appendChild(input);
       });
       document.body.appendChild(form);
-      form.submit();
+      // Ensure the current timer value is saved and that submit handlers run.
+      function doSubmit() {
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          // Fallback: add a hidden submit button and click it (triggers submit event)
+          const btn = document.createElement('button');
+          btn.type = 'submit';
+          btn.style.display = 'none';
+          form.appendChild(btn);
+          btn.click();
+        }
+      }
+
+      if (window.guardarTiempoActual && typeof window.guardarTiempoActual === 'function') {
+        try {
+          window.guardarTiempoActual().finally(doSubmit);
+        } catch (e) {
+          doSubmit();
+        }
+      } else {
+        doSubmit();
+      }
     }
   }
 

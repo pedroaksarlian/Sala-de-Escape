@@ -90,7 +90,12 @@
                 // success: completed path
                 resultEl().textContent = 'Correcto: seguiste el camino completo. Avanzando...';
                 // POST to server to save progress and get redirect
-                fetch('/Home/ScaloniComplete', { method: 'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+                const tiempoActual = window.getTiempoRestanteActual ? window.getTiempoRestanteActual() : 0;
+                fetch('/Home/ScaloniComplete', {
+                    method: 'POST',
+                    headers:{'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'},
+                    body: 'tiempoSegundos=' + encodeURIComponent(tiempoActual)
+                })
                     .then(r=>r.json())
                     .then(j=>{ if (j && j.redirect) setTimeout(()=> window.location.href = j.redirect,900); })
                     .catch(()=>{});

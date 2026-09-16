@@ -45,6 +45,17 @@ public class HomeController : Controller
         return View();
     }
 
+    public IActionResult IngresarCodigo()
+    {
+        ViewBag.Progress = GetProgress();
+        ViewBag.CompletedCount = GetProgress().Count;
+        ViewBag.Won = IsWon();
+        ViewBag.Participante = GetParticipanteActual();
+        ViewBag.HabitacionActual = "Lobby";
+        ViewBag.PartidaEnCurso = GetProgress().Count > 0 || IsWon();
+        return View();
+    }
+
     [HttpPost]
     public IActionResult CargarProgreso(string codigoSesion)
     {
@@ -188,6 +199,21 @@ public class HomeController : Controller
         HttpContext.Session.SetString("coudetDice", diceText);
         HttpContext.Session.SetString("coudetHeld", held ?? string.Empty);
 
+        if (attempts >= 100)
+        {
+            if (diceValues.Length != 5 || !diceValues.All(value => value == diceValues[0]))
+            {
+                var forcedValue = diceValues.Length > 0 ? diceValues[0] : 6;
+                diceValues = Enumerable.Repeat(forcedValue, 5).ToArray();
+                diceText = string.Join(", ", diceValues);
+                HttpContext.Session.SetString("coudetDice", diceText);
+                HttpContext.Session.SetString("coudetHeld", string.Empty);
+                TempData["mensaje"] = "Llegaste al intento 100. Los dados quedaron iguales para que puedas cerrar la sala.";
+                TempData["correcto"] = false;
+                return RedirectToAction(nameof(Coudet));
+            }
+        }
+
         if (attempts <= 0)
         {
             TempData["mensaje"] = "Primero tenés que tirar los dados para intentar la generala.";
@@ -195,7 +221,7 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Coudet));
         }
 
-        var isCorrect = diceValues.All(value => value == diceValues[0]);
+        var isCorrect = diceValues.Length == 5 && diceValues.All(value => value == diceValues[0]);
 
         if (isCorrect)
         {
@@ -292,7 +318,7 @@ public class HomeController : Controller
             SaveProgress("Acuna");
             TempData["mensaje"] = "Perfecto: armaste el vestuario 360° y encontraste los objetos clave.";
             TempData["correcto"] = true;
-            return RedirectToAction(nameof(Demichelis));
+            return RedirectToNextChallenge();
         }
         else
         {
@@ -315,7 +341,7 @@ public class HomeController : Controller
         SaveProgress("Acuna");
         TempData["mensaje"] = "Perfecto: armaste el vestuario 360° y encontraste los objetos clave.";
         TempData["correcto"] = true;
-        return RedirectToAction(nameof(Demichelis));
+        return RedirectToNextChallenge();
     }
 
     public IActionResult Demichelis()
@@ -442,8 +468,13 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public IActionResult TapiaComplete()
+    public IActionResult TapiaComplete(int? tiempoSegundos = null)
     {
+        if (tiempoSegundos.HasValue)
+        {
+            ActualizarTiempoDelFormulario(tiempoSegundos.Value);
+        }
+
         if (!CanAccessChallenge("Tapia"))
         {
             return Json(new { redirect = Url.Action(nameof(Index)) });
@@ -532,8 +563,13 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public IActionResult ScaloniComplete()
+    public IActionResult ScaloniComplete(int? tiempoSegundos = null)
     {
+        if (tiempoSegundos.HasValue)
+        {
+            ActualizarTiempoDelFormulario(tiempoSegundos.Value);
+        }
+
         if (!CanAccessChallenge("Scaloni"))
         {
             return Json(new { redirect = Url.Action(nameof(Index)) });
@@ -609,7 +645,14 @@ public class HomeController : Controller
         ViewBag.Jugadores = jugadores;
         ViewBag.Plantilla = jugadoresAdivinados;
         ViewBag.Objetivo = objetivo;
-        ViewBag.Tablero = BuildDonofrioBoard(jugadoresAdivinados);
+        
+        // Obtener el tablero y agrupar por posición
+        var tableroCompleto = BuildDonofrioBoard(jugadoresAdivinados);
+        ViewBag.Arqueros = tableroCompleto.Where(s => s.Categoria == "Arquero").ToList();
+        ViewBag.Defensores = tableroCompleto.Where(s => s.Categoria == "Defensor").ToList();
+        ViewBag.Mediocampistas = tableroCompleto.Where(s => s.Categoria == "Mediocampista").ToList();
+        ViewBag.Delanteros = tableroCompleto.Where(s => s.Categoria == "Delantero").ToList();
+        
         ViewBag.EquipoCompleto = equipoCompleto;
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
@@ -715,20 +758,38 @@ public class HomeController : Controller
 
     private static List<DonofrioSlot> BuildDonofrioBoard(List<JugadorDiCarlo> jugadoresAdivinados)
     {
-        var slots = new[]
+        // Fila 1: Arquero (centrado)
+        var arqueros = new[]
         {
-            new DonofrioSlot { Label = "GK", Categoria = "Arquero", CssClass = "slot-gk" },
-            new DonofrioSlot { Label = "LB", Categoria = "Defensor", CssClass = "slot-lb" },
-            new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-left" },
-            new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-right" },
-            new DonofrioSlot { Label = "RB", Categoria = "Defensor", CssClass = "slot-rb" },
-            new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-left" },
-            new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-right" },
-            new DonofrioSlot { Label = "CAM", Categoria = "Mediocampista", CssClass = "slot-cam" },
-            new DonofrioSlot { Label = "LW", Categoria = "Delantero", CssClass = "slot-lw" },
-            new DonofrioSlot { Label = "ST", Categoria = "Delantero", CssClass = "slot-st" },
-            new DonofrioSlot { Label = "RW", Categoria = "Delantero", CssClass = "slot-rw" }
+            new DonofrioSlot { Label = "GK", Categoria = "Arquero", CssClass = "slot-gk", Fila = 1, Centrado = true }
         };
+
+        // Fila 2: Defensores (4)
+        var defensores = new[]
+        {
+            new DonofrioSlot { Label = "LB", Categoria = "Defensor", CssClass = "slot-lb", Fila = 2 },
+            new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-left", Fila = 2 },
+            new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-right", Fila = 2 },
+            new DonofrioSlot { Label = "RB", Categoria = "Defensor", CssClass = "slot-rb", Fila = 2 }
+        };
+
+        // Fila 3: Mediocampistas
+        var mediocampistas = new[]
+        {
+            new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-left", Fila = 3 },
+            new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-right", Fila = 3 },
+            new DonofrioSlot { Label = "CAM", Categoria = "Mediocampista", CssClass = "slot-cam", Fila = 3 }
+        };
+
+        // Fila 4: Delanteros
+        var delanteros = new[]
+        {
+            new DonofrioSlot { Label = "LW", Categoria = "Delantero", CssClass = "slot-lw", Fila = 4 },
+            new DonofrioSlot { Label = "ST", Categoria = "Delantero", CssClass = "slot-st", Fila = 4 },
+            new DonofrioSlot { Label = "RW", Categoria = "Delantero", CssClass = "slot-rw", Fila = 4 }
+        };
+
+        var slots = arqueros.Concat(defensores).Concat(mediocampistas).Concat(delanteros).ToArray();
 
         var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -754,6 +815,8 @@ public class HomeController : Controller
         public string Categoria { get; set; } = string.Empty;
         public string CssClass { get; set; } = string.Empty;
         public JugadorDiCarlo? Jugador { get; set; }
+        public int Fila { get; set; }
+        public bool Centrado { get; set; }
     }
 
     public IActionResult DiCarlo()
@@ -1075,6 +1138,23 @@ public class HomeController : Controller
 
     private void SaveProgress(string challenge)
     {
+        // Si el formulario incluyó el tiempo restante, actualizar la sesión antes de persistir.
+        try
+        {
+            if (Request?.HasFormContentType == true && Request.Form.ContainsKey("tiempoRestanteSegundos"))
+            {
+                var raw = Request.Form["tiempoRestanteSegundos"].ToString();
+                if (int.TryParse(raw, out var parsed))
+                {
+                    ActualizarTiempoDelFormulario(parsed);
+                }
+            }
+        }
+        catch
+        {
+            // No bloquear la ejecución si hay problemas al leer el formulario.
+        }
+
         var progress = GetProgress();
         var exists = progress.Any(item => string.Equals(item, challenge, StringComparison.OrdinalIgnoreCase));
 

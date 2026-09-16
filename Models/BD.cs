@@ -138,33 +138,57 @@ public class BD
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var exists = connection.ExecuteScalar<int>(
-                "SELECT COUNT(1) FROM CodigosSesion WHERE Codigo = @Codigo",
-                new { Codigo = codigo });
+            var tiempoTotal = Math.Max(0, tiempoRestanteSegundos);
+            var minutos = tiempoTotal / 60;
+            var segundos = tiempoTotal % 60;
 
-            if (exists > 0)
+            var salaId = 1;
+            if (!string.IsNullOrWhiteSpace(progreso))
+            {
+                var salas = progreso.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var ultimaSala = salas.LastOrDefault();
+                salaId = ultimaSala switch
+                {
+                    "Coudet" => 1,
+                    "Acuna" => 2,
+                    "Demichelis" => 3,
+                    "Tapia" => 4,
+                    "Scaloni" => 5,
+                    "Donofrio" => 6,
+                    "Di Carlo" => 7,
+                    _ => salaId
+                };
+            }
+
+            var existe = connection.QuerySingleOrDefault<int?>(
+                "SELECT TOP 1 Id FROM Partida WHERE Codigo = @Codigo OR NombreParticipante = @NombreParticipante ORDER BY Id DESC",
+                new { Codigo = codigo, NombreParticipante = nombreParticipante });
+
+            if (existe.HasValue)
             {
                 connection.Execute(
-                    "UPDATE CodigosSesion SET Progreso = @Progreso, TiempoRestanteSegundos = @TiempoRestanteSegundos, FechaUltimaActualizacion = @Fecha WHERE Codigo = @Codigo",
+                    "UPDATE Partida SET NombreParticipante = @NombreParticipante, Minutos = @Minutos, Segundos = @Segundos, IdSala = @IdSala, Codigo = @Codigo WHERE Id = @Id",
                     new
                     {
-                        Codigo = codigo,
-                        Progreso = progreso,
-                        TiempoRestanteSegundos = tiempoRestanteSegundos,
-                        Fecha = DateTime.Now
+                        Id = existe.Value,
+                        NombreParticipante = nombreParticipante,
+                        Minutos = minutos,
+                        Segundos = segundos,
+                        IdSala = salaId,
+                        Codigo = codigo
                     });
             }
             else
             {
                 connection.Execute(
-                    "INSERT INTO CodigosSesion (Codigo, NombreParticipante, Progreso, TiempoRestanteSegundos, FechaCreacion, FechaUltimaActualizacion) VALUES (@Codigo, @NombreParticipante, @Progreso, @TiempoRestanteSegundos, @Fecha, @Fecha)",
+                    "INSERT INTO Partida (NombreParticipante, Minutos, Segundos, IdSala, Codigo) VALUES (@NombreParticipante, @Minutos, @Segundos, @IdSala, @Codigo)",
                     new
                     {
-                        Codigo = codigo,
                         NombreParticipante = nombreParticipante,
-                        Progreso = progreso,
-                        TiempoRestanteSegundos = tiempoRestanteSegundos,
-                        Fecha = DateTime.Now
+                        Minutos = minutos,
+                        Segundos = segundos,
+                        IdSala = salaId,
+                        Codigo = codigo
                     });
             }
         }
@@ -180,13 +204,14 @@ public class BD
         {
             using var connection = new SqlConnection(_connectionString);
             var result = connection.QuerySingleOrDefault<dynamic>(
-                "SELECT NombreParticipante, Progreso, TiempoRestanteSegundos FROM CodigosSesion WHERE Codigo = @Codigo",
+                "SELECT TOP 1 NombreParticipante, Minutos, Segundos, Codigo FROM Partida WHERE Codigo = @Codigo ORDER BY Id DESC",
                 new { Codigo = codigo });
 
             if (result == null)
                 return null;
 
-            return (result.NombreParticipante, result.Progreso, result.TiempoRestanteSegundos);
+            var tiempo = ((int)(result.Minutos ?? 0) * 60) + ((int)(result.Segundos ?? 0));
+            return (result.NombreParticipante, string.Empty, Math.Max(0, tiempo));
         }
         catch
         {

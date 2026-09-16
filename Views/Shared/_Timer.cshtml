@@ -15,10 +15,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const timerDisplay = document.getElementById('timerDisplay');
     const timerContainer = document.getElementById('timerContainer');
 
+    window.tiempoRestanteGlobal = tiempoRestante;
+    window.getTiempoRestanteActual = function() {
+        return Math.max(0, Number(window.tiempoRestanteGlobal ?? tiempoRestante));
+    };
+
     // Función para guardar el tiempo al servidor
     function guardarTiempoAlServidor(segundos) {
         if (isAutoSaving) return;
         isAutoSaving = true;
+        window.tiempoRestanteGlobal = Math.max(0, segundos);
         fetch('/Home/GuardarTiempo', {
             method: 'POST',
             headers: {
@@ -32,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hacer la función disponible globalmente
     window.guardarTiempoActual = function() {
+        window.tiempoRestanteGlobal = Math.max(0, tiempoRestante);
         guardarTiempoAlServidor(tiempoRestante);
         return new Promise(resolve => {
             setTimeout(resolve, 100);
@@ -54,12 +61,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Guardar tiempo cuando se está a punto de dejar la página
     window.addEventListener('beforeunload', function() {
+        window.tiempoRestanteGlobal = Math.max(0, tiempoRestante);
         if (tiempoRestante > 0) {
             navigator.sendBeacon('/Home/GuardarTiempo', 'tiempoSegundos=' + tiempoRestante);
         }
     });
 
     function actualizarTimer() {
+        window.tiempoRestanteGlobal = Math.max(0, tiempoRestante);
         const minutos = Math.floor(tiempoRestante / 60);
         const segundos = tiempoRestante % 60;
         timerDisplay.textContent = minutos + ':' + (segundos < 10 ? '0' : '') + segundos;
@@ -91,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         tiempoRestante--;
+        window.tiempoRestanteGlobal = Math.max(0, tiempoRestante);
     }
 
     // Actualizar cada segundo (sin guardado automático)

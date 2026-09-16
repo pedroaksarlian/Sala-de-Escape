@@ -163,7 +163,12 @@
                 }, 800);
             } else {
                 // final: complete room on server
-                fetch('/Home/TapiaComplete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+                const tiempoActual = window.getTiempoRestanteActual ? window.getTiempoRestanteActual() : 0;
+                fetch('/Home/TapiaComplete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: 'tiempoSegundos=' + encodeURIComponent(tiempoActual)
+                })
                     .then(resp => resp.json())
                     .then(json => {
                         if (json && json.redirect) {

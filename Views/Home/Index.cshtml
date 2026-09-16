@@ -24,17 +24,8 @@
         }
 
         <div class="hero-actions">
-            <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Arrancar el escape</a>
-
-            <form asp-controller="Home" asp-action="CargarProgreso" method="post" class="d-flex gap-2 flex-wrap justify-content-center">
-                <input type="text" name="codigoSesion" class="form-control form-control-lg" placeholder="Ingresar código de progreso guardado" title="Código de 8 caracteres generado al completar desafíos" />
-                <button type="submit" class="btn btn-outline-light btn-lg">Cargar progreso</button>
-            </form>
-
-            <form asp-controller="Home" asp-action="Continuar" method="post" class="d-flex gap-2 flex-wrap justify-content-center">
-                <input type="text" name="codigo" class="form-control form-control-lg" placeholder="Código de desafío (CANTILO, VESTUARIO, etc.)" />
-                <button type="submit" class="btn btn-outline-info btn-lg">Acceder a desafío</button>
-            </form>
+            <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Iniciar partida</a>
+            <a asp-controller="Home" asp-action="IngresarCodigo" class="btn btn-outline-light btn-lg">Ingresar código</a>
         </div>
 
         <div class="progress-panel">

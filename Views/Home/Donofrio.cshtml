@@ -27,36 +27,81 @@
 
         <div class="donofrio-shell">
             <div class="donofrio-board">
-                @foreach (var slot in tablero)
-                {
-                    var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
-                    var slotClass = slot.CssClass?.ToString() ?? string.Empty;
+                <!-- Fila 1: Arquero -->
+                <div class="donofrio-row row-arquero">
+                    @foreach (var slot in (ViewBag.Arqueros ?? new List<object>()))
+                    {
+                        var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                        <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
+                            @if (jugador != null)
+                            {
+                                <span class="slot-name">@jugador.Nombre</span>
+                                <span class="slot-mini">@jugador.Posicion</span>
+                            }
+                            else
+                            {
+                                <span class="slot-label">@slot.Label</span>
+                            }
+                        </div>
+                    }
+                </div>
 
-                    <div class="donofrio-slot @(jugador != null ? "filled" : "empty") @slotClass">
-                        @if (jugador != null)
-                        {
-                            <span class="slot-name">@jugador.Nombre</span>
-                            <span class="slot-mini">@jugador.Posicion</span>
-                        }
-                        else
-                        {
-                            <span class="slot-label">@slot.Label</span>
-                        }
-                    </div>
-                }
+                <!-- Fila 2: Defensores -->
+                <div class="donofrio-row row-defensores">
+                    @foreach (var slot in (ViewBag.Defensores ?? new List<object>()))
+                    {
+                        var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                        <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
+                            @if (jugador != null)
+                            {
+                                <span class="slot-name">@jugador.Nombre</span>
+                                <span class="slot-mini">@jugador.Posicion</span>
+                            }
+                            else
+                            {
+                                <span class="slot-label">@slot.Label</span>
+                            }
+                        </div>
+                    }
+                </div>
 
-                @if (plantilla.Count > 0)
-                {
-                    <div class="donofrio-team-list">
-                        @foreach (var jugador in plantilla)
-                        {
-                            <div class="donofrio-team-item">
-                                <span>@jugador.Nombre</span>
-                                <small>@jugador.Posicion</small>
-                            </div>
-                        }
-                    </div>
-                }
+                <!-- Fila 3: Mediocampistas -->
+                <div class="donofrio-row row-mediocampistas">
+                    @foreach (var slot in (ViewBag.Mediocampistas ?? new List<object>()))
+                    {
+                        var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                        <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
+                            @if (jugador != null)
+                            {
+                                <span class="slot-name">@jugador.Nombre</span>
+                                <span class="slot-mini">@jugador.Posicion</span>
+                            }
+                            else
+                            {
+                                <span class="slot-label">@slot.Label</span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Fila 4: Delanteros -->
+                <div class="donofrio-row row-delanteros">
+                    @foreach (var slot in (ViewBag.Delanteros ?? new List<object>()))
+                    {
+                        var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
+                        <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
+                            @if (jugador != null)
+                            {
+                                <span class="slot-name">@jugador.Nombre</span>
+                                <span class="slot-mini">@jugador.Posicion</span>
+                            }
+                            else
+                            {
+                                <span class="slot-label">@slot.Label</span>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
 
             <div class="donofrio-clue-box" style="padding: 1rem 1.1rem; border-radius: 16px; background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(148, 163, 184, 0.22);">
