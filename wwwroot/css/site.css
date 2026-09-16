@@ -50,6 +50,103 @@ body {
   text-align: center;
 }
 
+/* Home (inicio) background and two-column hero layout */
+.home-hero {
+  /* full-bleed hero: escape the .container max-width */
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* we'll let inner card control spacing */
+  background-image: url('/img/Inicio.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(3,7,18,0.55), rgba(3,7,18,0.65));
+  z-index: 0;
+}
+.home-hero .hero-card {
+  max-width: 1400px;
+  width: min(1400px, 92vw);
+  background: rgba(6,10,20,0.6);
+  border-radius: 18px;
+  padding: 3rem 2.25rem;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 2rem;
+  text-align: left;
+  align-items: center;
+  box-shadow: 0 30px 70px rgba(3,6,12,0.7);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+.home-hero .hero-card h1,
+.home-hero .hero-card p,
+.home-hero .hero-actions {
+  margin: 0;
+}
+.home-hero .hero-actions {
+  justify-content: flex-start;
+  margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .home-hero .hero-card {
+    grid-template-columns: 1fr;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .home-hero .hero-actions { justify-content: center; }
+}
+
+/* Improve spacing and alignment */
+.home-hero .hero-main {
+  padding: 1rem 0 1rem 0.2rem;
+}
+.home-hero .hero-main p { max-width: 68ch; }
+.home-hero .hero-actions .btn { min-width: 160px; }
+.home-hero .progress-pill { font-size: 0.85rem; }
+
+/* Ensure content uses available vertical space on larger screens */
+@media (min-height: 800px) and (min-width: 901px) {
+  .home-hero .hero-card { padding-top: 3.6rem; padding-bottom: 3.6rem; }
+}
+
+/* Hero content split */
+.hero-main {
+  padding-right: 0.5rem;
+}
+.hero-main .badge { margin-bottom: 0.6rem; display: inline-block; }
+.hero-main h1 { color: #fff; }
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+}
+.hero-side .progress-panel {
+  width: 100%;
+  box-shadow: none;
+  padding: 1.25rem;
+}
+
+@media (min-width: 901px) {
+  .home-hero { background-attachment: fixed; }
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

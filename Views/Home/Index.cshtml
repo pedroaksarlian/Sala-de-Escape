@@ -5,36 +5,40 @@
     var mensajeExito = TempData["mensajeExito"] as string;
 }
 
-<div class="game-shell">
+<div class="game-shell home-hero">
     <div class="hero-card">
-        <span class="badge">Escape del container de Cantilo</span>
-        <h1>Pezzela intenta escapar</h1>
-        <p>
-            La misión está clara: atravesar 7 salas, resolver cada desafío y salir vivo del contenedor.
-            Cada prueba deja una pista, cada pista te acerca a la puerta de salida.
-        </p>
+        <div class="hero-main">
+            <span class="badge">Escape del container de Cantilo</span>
+            <h1>Pezzela intenta escapar</h1>
+            <p>
+                La misión está clara: atravesar 7 salas, resolver cada desafío y salir vivo del contenedor.
+                Cada prueba deja una pista, cada pista te acerca a la puerta de salida.
+            </p>
 
-        @if (!string.IsNullOrWhiteSpace(mensajeError))
-        {
-            <div class="alert alert-danger">@mensajeError</div>
-        }
-        @if (!string.IsNullOrWhiteSpace(mensajeExito))
-        {
-            <div class="alert alert-success">@mensajeExito</div>
-        }
+            @if (!string.IsNullOrWhiteSpace(mensajeError))
+            {
+                <div class="alert alert-danger">@mensajeError</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(mensajeExito))
+            {
+                <div class="alert alert-success">@mensajeExito</div>
+            }
 
-        <div class="hero-actions">
-            <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Iniciar partida</a>
-            <a asp-controller="Home" asp-action="IngresarCodigo" class="btn btn-outline-light btn-lg">Ingresar código</a>
+            <div class="hero-actions">
+                <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Iniciar partida</a>
+                <a asp-controller="Home" asp-action="IngresarCodigo" class="btn btn-outline-light btn-lg">Ingresar código</a>
+            </div>
         </div>
 
-        <div class="progress-panel">
-            <div class="progress-header">
-                <h3>Progreso del escape</h3>
-                <span class="progress-pill">@ViewBag.CompletedCount / 7 salas</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill" style="width: @(ViewBag.CompletedCount != null ? ((int)ViewBag.CompletedCount * 100 / 7) : 0)%"></div>
+        <div class="hero-side">
+            <div class="progress-panel">
+                <div class="progress-header">
+                    <h3>Progreso del escape</h3>
+                    <span class="progress-pill">@ViewBag.CompletedCount / 7 salas</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: @(ViewBag.CompletedCount != null ? ((int)ViewBag.CompletedCount * 100 / 7) : 0)%"></div>
+                </div>
             </div>
         </div>
     </div>
