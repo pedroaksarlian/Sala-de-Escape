@@ -1,6 +1,7 @@
+/* Sin background en html: así el fondo del body se propaga al canvas y las capas
+   con z-index negativo (el velo de las salas) vuelven a ser visibles. */
 html {
   font-size: 14px;
-  background: #0b1020;
 }
 
 @media (min-width: 768px) {
@@ -12,15 +13,20 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  /* Fondo de las salas. Ojo: html tiene background propio, así que el fondo del body
+     NO se propaga al canvas y tapa cualquier capa con z-index negativo. Por eso la
+     imagen y sus velos van acá y no en un ::before de .challenge-page. */
   background:
-    radial-gradient(circle at 50% 120%, rgba(249, 115, 22, 0.35), transparent 55%),
-    radial-gradient(circle at top, rgba(239, 68, 68, 0.22), transparent 38%),
-    linear-gradient(180deg, rgba(5, 11, 22, 0.92) 0%, rgba(13, 19, 39, 0.94) 100%),
+    radial-gradient(circle at 18% 90%, rgba(253, 186, 116, 0.28), transparent 26%),
+    radial-gradient(circle at 78% 92%, rgba(248, 113, 113, 0.26), transparent 30%),
+    radial-gradient(ellipse at 50% 115%, rgba(251, 146, 60, 0.42), rgba(239, 68, 68, 0.14) 45%, transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
     url('/img/Inicio.jpg');
-  background-size: cover, cover, cover, cover;
-  background-position: center, center, center, center;
+  background-color: #0b1020;
+  background-size: cover, cover, cover, cover, cover;
+  background-position: center, center, center, center, center;
   background-repeat: no-repeat;
-  background-attachment: fixed, fixed, fixed, fixed;
+  background-attachment: fixed, fixed, fixed, fixed, fixed;
   color: #edf2ff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -330,6 +336,19 @@ body {
   flex-direction: column;
   gap: 1.5rem;
   padding-top: 1rem;
+  position: relative;
+}
+
+/* Velo que oscurece la foto SOLO en las salas (el index queda con su propio hero).
+   Sin z-index ni backdrop-filter en .challenge-page: crearían un stacking context
+   que deja atrapados a los modales de Bootstrap detrás del backdrop. */
+.challenge-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 7, 18, 0.45), rgba(3, 7, 18, 0.58));
 }
 
 .back-link {
@@ -338,8 +357,11 @@ body {
   font-weight: 600;
 }
 
+/* Ojo: nada de backdrop-filter ni z-index acá; crean un stacking context que
+   deja atrapados a los modales de Bootstrap detrás del backdrop. */
 .challenge-panel {
   padding: 2rem;
+  background: rgba(6, 10, 20, 0.82);
 }
 
 .challenge-panel h1 {
@@ -797,11 +819,10 @@ body {
 }
 
 .dicarlo-field {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
-  gap: 1rem;
-  padding: 1.5rem;
-  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.75rem;
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(10, 57, 37, 0.9), rgba(10, 57, 37, 0.68));
   border: 2px solid rgba(96, 165, 250, 0.9);
@@ -901,15 +922,15 @@ body {
 }
 
 .donofrio-board {
-  width: min(820px, 100%);
+  width: min(960px, 100%);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
-  gap: 1.2rem 0;
-  min-height: 560px;
-  padding: 2rem 2.2rem;
+  gap: 1rem 0;
+  min-height: 660px;
+  padding: 2.25rem 2rem;
   border-radius: 26px;
   background: rgba(1, 23, 36, 0.82);
   border: 2px solid rgba(96, 165, 250, 0.9);
@@ -920,9 +941,55 @@ body {
 .donofrio-row {
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 1.2rem;
+  align-items: stretch;
+  gap: clamp(0.6rem, 1.8vw, 1.2rem);
   width: 100%;
+}
+
+/* Cada puesto es una tarjeta que reparte el ancho disponible de su fila,
+   así la formación llena el cuadro sin desbordarlo. */
+.donofrio-slot {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 200px;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.8rem 0.6rem;
+  border-radius: 18px;
+  border: 2px solid rgba(96, 165, 250, 0.55);
+  background: rgba(15, 35, 58, 0.55);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.donofrio-slot.filled {
+  background: rgba(147, 197, 253, 0.18);
+  border-color: rgba(147, 197, 253, 0.9);
+}
+
+.donofrio-slot .slot-label {
+  font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #bfdbfe;
+}
+
+.donofrio-slot .slot-name {
+  font-size: clamp(0.95rem, 1.7vw, 1.2rem);
+  line-height: 1.2;
+}
+
+.donofrio-slot .slot-mini {
+  font-size: clamp(0.65rem, 1.1vw, 0.78rem);
+}
+
+/* El arquero va solo en su fila: que no ocupe todo el ancho. */
+.donofrio-row.row-arquero .donofrio-slot {
+  flex: 0 1 200px;
 }
 
 .donofrio-row.row-arquero {
@@ -1040,10 +1107,12 @@ body {
 
 .dicarlo-match-header {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: 0.85rem;
+  margin-bottom: 0;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
   color: #e2e8f0;
 }
 
@@ -1069,7 +1138,7 @@ body {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  min-height: 180px;
+  width: 100%;
 }
 
 .dicarlo-match-body h3 {
@@ -1144,6 +1213,7 @@ body {
 .match-badge-group {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
@@ -1212,6 +1282,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 1.5rem;
   padding: 0.75rem 1.5rem;
   border-radius: 14px;
@@ -1229,6 +1300,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .team-rival {
@@ -1238,6 +1310,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .score-separator {
@@ -1415,6 +1488,17 @@ body {
   margin: 0 0 1.5rem;
 }
 
+.final-nombre {
+  font-size: 1.3rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 1rem;
+}
+
+.perdiste-panel .final-nombre strong {
+  color: #fca5a5;
+}
+
 .perdiste-image {
   display: block;
   max-width: 320px;
@@ -1550,7 +1634,13 @@ body {
   }
 
   .donofrio-row {
-    gap: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .donofrio-slot {
+    min-height: 82px;
+    padding: 0.6rem 0.4rem;
+    border-radius: 14px;
   }
 
   .donofrio-team-list {

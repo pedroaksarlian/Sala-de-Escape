@@ -882,10 +882,10 @@ public class HomeController : Controller
         // Fila 2: Defensores (4)
         var defensores = new[]
         {
-            new DonofrioSlot { Label = "LB", Categoria = "Defensor", CssClass = "slot-lb", Fila = 2 },
+            new DonofrioSlot { Label = "LB", Categoria = "Defensor", CssClass = "slot-lb", Fila = 2, Preferido = "Acuña" },
             new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-left", Fila = 2 },
             new DonofrioSlot { Label = "CB", Categoria = "Defensor", CssClass = "slot-cb-right", Fila = 2 },
-            new DonofrioSlot { Label = "RB", Categoria = "Defensor", CssClass = "slot-rb", Fila = 2 }
+            new DonofrioSlot { Label = "RB", Categoria = "Defensor", CssClass = "slot-rb", Fila = 2, Preferido = "Montiel" }
         };
 
         // Fila 3: Mediocampistas
@@ -893,7 +893,7 @@ public class HomeController : Controller
         {
             new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-left", Fila = 3 },
             new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cm-right", Fila = 3 },
-            new DonofrioSlot { Label = "CAM", Categoria = "Mediocampista", CssClass = "slot-cam", Fila = 3 }
+            new DonofrioSlot { Label = "CM", Categoria = "Mediocampista", CssClass = "slot-cam", Fila = 3 }
         };
 
         // Fila 4: Delanteros
@@ -908,11 +908,31 @@ public class HomeController : Controller
 
         var usados = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var slot in slots)
+        // Puestos con dueño fijo: Montiel de RB y Acuña de LB. Esos jugadores no pueden caer
+        // en otro puesto, y esos puestos quedan vacíos hasta que se adivine al jugador dueño.
+        var reservados = new HashSet<string>(
+            slots.Where(s => !string.IsNullOrWhiteSpace(s.Preferido))
+                 .Select(s => NormalizePlayerName(s.Preferido)),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var slot in slots.Where(s => !string.IsNullOrWhiteSpace(s.Preferido)))
+        {
+            var preferido = NormalizePlayerName(slot.Preferido);
+            slot.Jugador = jugadoresAdivinados
+                .FirstOrDefault(j => NormalizePlayerName(j.Nombre) == preferido);
+
+            if (slot.Jugador != null)
+            {
+                usados.Add(NormalizePlayerName(slot.Jugador.Nombre));
+            }
+        }
+
+        foreach (var slot in slots.Where(s => string.IsNullOrWhiteSpace(s.Preferido)))
         {
             slot.Jugador = jugadoresAdivinados
                 .FirstOrDefault(j =>
                     string.Equals(j.Posicion, slot.Categoria, StringComparison.OrdinalIgnoreCase)
+                    && !reservados.Contains(NormalizePlayerName(j.Nombre))
                     && !usados.Contains(NormalizePlayerName(j.Nombre)));
 
             if (slot.Jugador != null)
@@ -933,6 +953,8 @@ public class HomeController : Controller
         public JugadorDiCarlo? Jugador { get; set; }
         public int Fila { get; set; }
         public bool Centrado { get; set; }
+        // Nombre del jugador que debe ocupar este puesto sí o sí.
+        public string Preferido { get; set; } = string.Empty;
     }
 
     public IActionResult DiCarlo()
@@ -979,8 +1001,10 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public IActionResult DiCarlo(string decision)
+    public IActionResult DiCarlo(string decision, int? tiempoRestanteSegundos = null)
     {
+        ActualizarTiempoDelFormulario(tiempoRestanteSegundos);
+
         if (!CanAccessChallenge("Di Carlo"))
         {
             return RedirectToAction(nameof(Index));
@@ -1207,7 +1231,7 @@ public class HomeController : Controller
                 Opciones = new[] { "Marcar apretado", "Permitir el balón y defender", "Agredir temprano" },
                 Correcta = "Marcar apretado",
                 Exito = "¡TFIIIIIIN! Cantilo gana 3-2 contra Los Robots de Di Carlo. ¡Escapás de la sala!",
-                Fracaso = "¡NO! Los Robots meten otra. 3-3. Vamos a penales vs Los Robots.",
+                Fracaso = string.Empty,
                 EsAtaque = false,
                 Minuto = "90+3'",
                 ResultadoExitoTipo = "DEFENSOR",
@@ -1357,6 +1381,7 @@ public class HomeController : Controller
         GuardarTiempoRestante(tiempoRestante);
         ViewBag.Progress = GetProgress();
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
+        ViewBag.Participante = GetParticipanteActual();
         return View();
     }
 
@@ -1364,13 +1389,24 @@ public class HomeController : Controller
     {
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
+
+        // Al perder la sesión ya fue limpiada, así que buscamos el nombre guardado antes de limpiar.
+        var nombre = HttpContext.Session.GetString("participante");
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            nombre = HttpContext.Session.GetString("ultimoParticipante");
+        }
+        ViewBag.Participante = string.IsNullOrWhiteSpace(nombre) ? "Jugador" : nombre;
+
         return View();
     }
 
     [HttpPost]
     [HttpPost]
-    public IActionResult Penales(string decision)
+    public IActionResult Penales(string decision, int? tiempoRestanteSegundos = null)
     {
+        ActualizarTiempoDelFormulario(tiempoRestanteSegundos);
+
         if (!CanAccessChallenge("Di Carlo"))
         {
             return RedirectToAction(nameof(Index));
@@ -1532,6 +1568,13 @@ public class HomeController : Controller
 
     private void LimpiarSesion()
     {
+        // Guardamos el nombre aparte para poder mostrarlo en la pantalla final.
+        var nombre = HttpContext.Session.GetString("participante");
+        if (!string.IsNullOrWhiteSpace(nombre))
+        {
+            HttpContext.Session.SetString("ultimoParticipante", nombre);
+        }
+
         HttpContext.Session.Remove("coudetAttempts");
         HttpContext.Session.Remove("coudetDice");
         HttpContext.Session.Remove("coudetHeld");

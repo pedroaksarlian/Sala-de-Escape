@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "¡Ganaste!";
     var codigoSesion = TempData["CodigoSesion"] as string;
+    var participante = ViewBag.Participante as string ?? "Jugador";
 }
 
 @Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
@@ -9,6 +10,9 @@
     <div class="challenge-panel text-center">
         <span class="badge">Final</span>
         <h1>¡Pezzela escapó del container!</h1>
+        <p class="final-nombre">
+            <strong>@participante</strong>, pudiste sacar a Pezzella de la cárcel de Cantilo.
+        </p>
         <p>
             Superaste las 7 salas, resolviste cada desafío y lograste salir de Cantilo con la misión cumplida.
         </p>

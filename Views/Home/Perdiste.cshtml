@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "¡Perdiste!";
+    var participante = ViewBag.Participante as string ?? "Jugador";
 }
 
 @Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
@@ -8,6 +9,9 @@
     <div class="challenge-panel text-center perdiste-panel">
         <span class="badge badge-danger">Final</span>
         <h1>¡Cantilo Cayó!</h1>
+        <p class="final-nombre">
+            <strong>@participante</strong>, no pudiste sacar a Pezzella de la cárcel de Cantilo.
+        </p>
         <p>
             Los Robots de Di Carlo fueron más fuertes. Pezzella no logró escapar. El sueño quedó en el camino. La sala se selló y todo se esfumó.
         </p>
