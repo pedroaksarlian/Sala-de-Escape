@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "¡Perdiste!";
+}
+
+@Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
+
+<div class="challenge-page">
+    <div class="challenge-panel text-center perdiste-panel">
+        <span class="badge badge-danger">Final</span>
+        <h1>¡Cantilo Cayó!</h1>
+        <p>
+            Los Robots de Di Carlo fueron más fuertes. Pezzella no logró escapar. El sueño quedó en el camino. La sala se selló y todo se esfumó.
+        </p>
+
+        <div class="alert alert-danger perdiste-alert">
+            <strong>Cantilo perdió la final contra Los Robots de Di Carlo.</strong><br/>
+            La derrota se siente, pero siempre hay nuevas oportunidades. ¿Intentas nuevamente?
+        </div>
+
+        <div class="perdiste-actions">
+            <a href="/" class="btn btn-primary btn-lg">Volver al Inicio</a>
+        </div>
+    </div>
+</div>

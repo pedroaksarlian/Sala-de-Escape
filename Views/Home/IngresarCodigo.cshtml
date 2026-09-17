@@ -11,7 +11,29 @@
         </p>
 
         <div class="hero-actions" style="flex-direction: column; align-items: center;">
-            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-light btn-lg">Volver al inicio</a>
+                @if (TempData["mensajeError"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["mensajeError"]</div>
+                }
+                @if (TempData["mensajeExito"] != null)
+                {
+                    <div class="alert alert-success">@TempData["mensajeExito"]</div>
+                }
+
+                <form asp-controller="Home" asp-action="IngresarCodigos" method="post" style="width:100%; max-width:420px;">
+                    <div class="mb-3">
+                        <label class="form-label">Código de sala</label>
+                        <input name="codigoSala" class="form-control" placeholder="Código de la sala (ej: Chacho)" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Código de sesión</label>
+                        <input name="codigoSesion" class="form-control" placeholder="Tu código de sesión" />
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button type="submit" class="btn btn-primary">Enviar códigos</button>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-light">Volver al inicio</a>
+                    </div>
+                </form>
         </div>
     </div>
 </div>

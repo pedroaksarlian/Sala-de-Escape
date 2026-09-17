@@ -1,5 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Coudet";
+    ViewBag.HistoriaTitulo = "La historia del Chacho";
+    ViewBag.HistoriaEfecto = "slide";
+    ViewBag.HistoriaImagenes = new[] { "/img/Coudet%20Texto.jfif", "/img/Coudet%20Riendose.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
     var attempts = ViewBag.Attempts is int attemptsValue ? attemptsValue : 0;
@@ -18,11 +21,12 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
     <div class="challenge-panel">
         <span class="badge">Desafío 1 · Coudet</span>
-        <h1>Generala a lo bruto</h1>
+        <h1>LA SUERTE DEL CHACHO</h1>
         <p>
-            Seleccioná los dados que querés mantener. Cada 3 tiradas sin lograr la generala, todos los dados se randomizarán de nuevo y tendrás que empezar de cero.
+            Dicen que Coudet tiene suerte asi que para pasar a la siguente sala hay que sacar una generala. Tené en cuenta que la hinchada es exigente y cada tres intentos se va a reiniciar. Tenes 100 intentos en total para sacar generala.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))

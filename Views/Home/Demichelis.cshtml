@@ -1,5 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Demichelis";
+    ViewBag.HistoriaTitulo = "Demichelis y Pezzella";
+    ViewBag.HistoriaEfecto = "zoom";
+    ViewBag.HistoriaImagenes = new[] { "/img/Demichelis.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
 }
@@ -8,11 +11,12 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
     <div class="challenge-panel">
         <span class="badge">Desafío 3 · Demichelis</span>
-        <h1>Jet-lag en alemán</h1>
+        <h1>EL JETLAG DEL MICHO</h1>
         <p>
-            El audio está cargado de ruido y dejetas en alemán. Con el diccionario que te dieron, decodificá la frase final para seguir avanzando.
+            Demichelis te está ayudando pero por precaución no quiere hablarte en español, prefirió su segundo idioma, el alemán. Para poder descubrir las tres palabras claves que Micho te está dando necesitas escuchar el audio, usar la pista y el diccionario.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))

@@ -1,5 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Scaloni";
+    ViewBag.HistoriaTitulo = "Scaloni y Nico González";
+    ViewBag.HistoriaEfecto = "flip";
+    ViewBag.HistoriaImagenes = new[] { "/img/Scaloni.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
 }
@@ -8,11 +11,12 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
     <div class="challenge-panel">
         <span class="badge">Desafío 5 · Scaloni</span>
-        <h1>El camino</h1>
+        <h1>EL CAMINO</h1>
         <p>
-            Viste la ruta una sola vez. Ahora tenés que recordarla tal cual. Si te equivocás, te quedás atrapada en el laberinto.
+           Scaloni te va a mostrar el camino para ganar la copa del mundo. Vos lo tenes que memorizar y despues repetirlo en el mismo orden. Cuidado que si perdes cerca del final van a pensar que te apuraron para que pierdas y acordate que NO PODES IR PARA ATRAS
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))

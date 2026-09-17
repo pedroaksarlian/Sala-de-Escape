@@ -1,5 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Tapia";
+    ViewBag.HistoriaTitulo = "El Chiqui Tapia";
+    ViewBag.HistoriaEfecto = "fade";
+    ViewBag.HistoriaImagenes = new[] { "/img/Chiqui.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
 }
@@ -8,11 +11,12 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
     <div class="challenge-panel">
         <span class="badge">Desafío 4 · Tapia</span>
-        <h1>La figura perfecta</h1>
+        <h1>LA MAFIA DEL CHIQUI</h1>
         <p>
-            Debés hacer que coincida la figura de arriba con el orden exacto de abajo. Solo una secuencia termina armando el patrón correcto.
+           Tenes que ordenar los colores de la paleta en el orden correcto para que el chiqui lo verifique. Es como dividir una liga en dos zonas de 15, cada equipo tiene que estar en su zona para que el producto llegue a su maxima expresion.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))

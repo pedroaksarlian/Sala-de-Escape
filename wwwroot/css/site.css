@@ -13,8 +13,14 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top, rgba(239, 68, 68, 0.18), transparent 38%),
-    linear-gradient(180deg, #050b16 0%, #0d1327 100%);
+    radial-gradient(circle at 50% 120%, rgba(249, 115, 22, 0.35), transparent 55%),
+    radial-gradient(circle at top, rgba(239, 68, 68, 0.22), transparent 38%),
+    linear-gradient(180deg, rgba(5, 11, 22, 0.92) 0%, rgba(13, 19, 39, 0.94) 100%),
+    url('/img/Inicio.jpg');
+  background-size: cover, cover, cover, cover;
+  background-position: center, center, center, center;
+  background-repeat: no-repeat;
+  background-attachment: fixed, fixed, fixed, fixed;
   color: #edf2ff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -74,8 +80,35 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(3,7,18,0.55), rgba(3,7,18,0.65));
+  background:
+    radial-gradient(ellipse at 50% 115%, rgba(251, 146, 60, 0.55), rgba(239, 68, 68, 0.2) 45%, transparent 70%),
+    linear-gradient(180deg, rgba(3,7,18,0.55), rgba(3,7,18,0.65));
   z-index: 0;
+}
+
+/* Resplandor de incendio sobre la cancha del inicio */
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 18% 88%, rgba(253, 186, 116, 0.45), transparent 26%),
+    radial-gradient(circle at 78% 92%, rgba(248, 113, 113, 0.4), transparent 30%),
+    radial-gradient(circle at 50% 100%, rgba(255, 215, 120, 0.35), transparent 40%);
+  mix-blend-mode: screen;
+  animation: fireGlow 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes fireGlow {
+  0%   { opacity: 0.55; transform: translateY(0) scale(1); }
+  50%  { opacity: 0.85; transform: translateY(-6px) scale(1.02); }
+  100% { opacity: 0.6;  transform: translateY(2px) scale(1.01); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero::after { animation: none; }
 }
 .home-hero .hero-card {
   max-width: 1400px;
@@ -1076,6 +1109,331 @@ body {
   box-shadow: 0 10px 18px rgba(14, 116, 144, 0.18);
 }
 
+/* ========== NUEVOS ESTILOS PARA DICARLO MEJORADO ========== */
+
+.match-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 14px;
+  background: rgba(8, 14, 28, 0.8);
+  border: 2px solid rgba(96, 165, 250, 0.5);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 900;
+  color: #f8fafc;
+}
+
+.team-argentina {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(96, 165, 250, 0.15));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-rival {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(245, 94, 94, 0.15));
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.score-separator {
+  font-size: 1.8rem;
+  color: #bfdbfe;
+  font-weight: bold;
+}
+
+.penales-indicator {
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(251, 191, 36, 0.15));
+  border: 2px solid rgba(251, 191, 36, 0.6);
+  color: #fef08a;
+  text-align: center;
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.penales-indicator strong {
+  display: block;
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.penales-indicator p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #fde047;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
+  }
+}
+
+/* FEEDBACK DE DECISIONES - CORRECTO/INCORRECTO */
+
+.decision-correct,
+.decision-wrong {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 14px;
+  border: 2px solid;
+  margin: 1.5rem 0;
+  animation: slideInDecision 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards,
+               pulseDecision 0.6s ease-out 0.2s 1;
+}
+
+.decision-correct {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(74, 222, 128, 0.1));
+  border-color: rgba(34, 197, 94, 0.8);
+  color: #86efac;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), inset 0 0 0 1px rgba(34, 197, 94, 0.2);
+}
+
+.decision-wrong {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(252, 165, 165, 0.1));
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #fca5a5;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+}
+
+.decision-feedback {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.decision-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  border-radius: 50%;
+  font-size: 2.2rem;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid currentColor;
+  animation: popIcon 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.decision-text {
+  flex: 1;
+}
+
+.decision-text strong {
+  display: block;
+  font-size: 1.15rem;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.decision-text p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+@keyframes slideInDecision {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseDecision {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes popIcon {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Vista de Perdiste */
+.perdiste-panel {
+  background: linear-gradient(135deg, rgba(20, 10, 10, 0.95), rgba(30, 15, 15, 0.95));
+  border: 2px solid rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.3), 0 25px 50px rgba(20, 10, 10, 0.6);
+  padding: 3rem 2rem 2rem;
+}
+
+.perdiste-panel .badge {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #fecaca;
+}
+
+.perdiste-panel h1 {
+  color: #fca5a5;
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin: 1rem 0 0.75rem;
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+}
+
+.perdiste-panel p {
+  color: #fcdndk;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+}
+
+.perdiste-alert {
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid rgba(239, 68, 68, 0.6);
+  color: #fecaca;
+  padding: 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  line-height: 1.8;
+  margin: 1.5rem 0;
+}
+
+.perdiste-alert strong {
+  display: block;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.perdiste-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+}
+
+.perdiste-actions .btn {
+  min-width: 200px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+/* Mejoras generales de dicarlo-panel */
+.dicarlo-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.dicarlo-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.8), transparent);
+  animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* Grid responsivo para penales */
+.dicarlo-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 600px) {
+  .dicarlo-choice-grid {
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+  }
+
+  .match-score {
+    gap: 1rem;
+    font-size: 1.3rem;
+  }
+
+  .team-argentina,
+  .team-rival {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .score-separator {
+    font-size: 1.4rem;
+  }
+
+  .decision-feedback {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .decision-icon {
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
+    font-size: 1.8rem;
+  }
+
+  .decision-text strong {
+    font-size: 1rem;
+  }
+
+  .decision-text p {
+    font-size: 0.9rem;
+  }
+
+  .perdiste-panel {
+    padding: 2rem 1.5rem 1.5rem;
+  }
+
+  .perdiste-actions {
+    flex-direction: column;
+  }
+
+  .perdiste-actions .btn {
+    width: 100%;
+  }
+}
+
 @media (max-width: 767px) {
   .donofrio-board {
     flex-direction: column;
@@ -1122,4 +1480,250 @@ body {
   .dicarlo-choice-grid {
     grid-template-columns: 1fr;
   }
+}
+/* =========================================================
+   Historia de la sala — visor de fotos en primer plano
+   ========================================================= */
+
+.historia-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: radial-gradient(circle at 50% 40%, rgba(15, 23, 42, 0.82), rgba(2, 6, 14, 0.95));
+  backdrop-filter: blur(8px) saturate(120%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.historia-overlay.is-open {
+  display: flex;
+  opacity: 1;
+}
+
+.historia-dialog {
+  position: relative;
+  width: min(980px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 1.1rem 1.25rem;
+  border-radius: 24px;
+  background: rgba(8, 14, 28, 0.92);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  box-shadow: 0 30px 80px rgba(2, 6, 14, 0.8), 0 0 0 1px rgba(148, 163, 184, 0.12);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.historia-overlay.is-open .historia-dialog {
+  transform: translateY(0) scale(1);
+}
+
+.historia-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.35rem;
+}
+
+.historia-head .badge {
+  margin: 0;
+}
+
+.historia-close {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(239, 68, 68, 0.14);
+  color: #fecaca;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.historia-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: rotate(90deg);
+}
+
+.historia-stage {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #04070f;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.historia-stage img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(66vh, 620px);
+  object-fit: contain;
+  will-change: opacity, transform, filter;
+}
+
+.historia-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(8, 14, 28, 0.7);
+  color: #f8fafc;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
+}
+
+.historia-nav:hover {
+  background: rgba(239, 68, 68, 0.75);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.historia-nav.prev { left: 0.7rem; }
+.historia-nav.next { right: 0.7rem; }
+
+.historia-nav[disabled] {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+.historia-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.35rem;
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.85rem;
+}
+
+.historia-dots {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.historia-dot {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.18);
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.historia-dot.active {
+  background: #ef4444;
+  transform: scale(1.35);
+}
+
+.historia-hint {
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 600px) {
+  .historia-nav { width: 38px; height: 38px; font-size: 1.1rem; }
+  .historia-foot { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+}
+
+/* ---- Efectos de transición entre fotos ---- */
+
+/* fade: desvanecido suave (Tapia, Donofrio) */
+.historia-stage.fx-fade img { transition: opacity 0.45s ease; }
+.historia-stage.fx-fade img.is-leaving { opacity: 0; }
+.historia-stage.fx-fade img.is-entering { animation: fxFadeIn 0.45s ease both; }
+@keyframes fxFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* slide: deslizamiento lateral (Coudet, Di Carlo) */
+.historia-stage.fx-slide img { transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.historia-stage.fx-slide img.is-leaving { opacity: 0; transform: translateX(-12%); }
+.historia-stage.fx-slide img.is-leaving.back { transform: translateX(12%); }
+.historia-stage.fx-slide img.is-entering { animation: fxSlideIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.historia-stage.fx-slide img.is-entering.back { animation-name: fxSlideInBack; }
+@keyframes fxSlideIn { from { opacity: 0; transform: translateX(14%); } to { opacity: 1; transform: none; } }
+@keyframes fxSlideInBack { from { opacity: 0; transform: translateX(-14%); } to { opacity: 1; transform: none; } }
+
+/* zoom: acercamiento dramático (Acuña, Demichelis) */
+.historia-stage.fx-zoom img { transition: opacity 0.45s ease, transform 0.45s ease; }
+.historia-stage.fx-zoom img.is-leaving { opacity: 0; transform: scale(1.12); }
+.historia-stage.fx-zoom img.is-entering { animation: fxZoomIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fxZoomIn {
+  from { opacity: 0; transform: scale(1.25); filter: blur(10px) brightness(1.4); }
+  to   { opacity: 1; transform: scale(1); filter: none; }
+}
+
+/* flip: giro 3D (Scaloni) */
+.historia-stage.fx-flip { perspective: 1400px; }
+.historia-stage.fx-flip img { transition: opacity 0.4s ease, transform 0.4s ease; backface-visibility: hidden; }
+.historia-stage.fx-flip img.is-leaving { opacity: 0; transform: rotateY(-70deg); }
+.historia-stage.fx-flip img.is-entering { animation: fxFlipIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes fxFlipIn {
+  from { opacity: 0; transform: rotateY(75deg) scale(0.9); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: rotateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .historia-overlay,
+  .historia-dialog,
+  .historia-stage img { transition: none !important; animation: none !important; }
+}
+
+/* Botón para volver a ver la historia dentro de la sala */
+.historia-reopen {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fecaca;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.historia-reopen:hover {
+  background: rgba(239, 68, 68, 0.28);
+  transform: translateY(-1px);
+}
+
+.historia-fallback {
+  margin: 0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 0.95rem;
 }

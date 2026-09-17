@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Microsoft.AspNetCore.Http;
@@ -57,6 +57,74 @@ public class HomeController : Controller
     }
 
     [HttpPost]
+    public IActionResult IngresarCodigos(string codigoSala, string codigoSesion)
+    {
+        if (string.IsNullOrWhiteSpace(codigoSala) || string.IsNullOrWhiteSpace(codigoSesion))
+        {
+            TempData["mensajeError"] = "Por favor ingresá los dos códigos (sala y sesión).";
+            return RedirectToAction(nameof(IngresarCodigo));
+        }
+
+        var salaId = _bd.ObtenerSalaIdPorCodigo(codigoSala.Trim());
+        if (!salaId.HasValue)
+        {
+            TempData["mensajeError"] = "Código de sala inválido.";
+            return RedirectToAction(nameof(IngresarCodigo));
+        }
+
+        var resultado = _bd.RecuperarProgresoPorCodigo(codigoSesion.Trim());
+        if (resultado == null)
+        {
+            TempData["mensajeError"] = "Código de sesión inválido o expirado.";
+            return RedirectToAction(nameof(IngresarCodigo));
+        }
+
+        var (nombreParticipante, progreso, tiempoRestante) = resultado.Value;
+        var progresoRestaurado = string.IsNullOrWhiteSpace(progreso)
+            ? GetChallengeNameBySalaId(salaId.Value)
+            : progreso;
+
+        HttpContext.Session.SetString("participante", nombreParticipante);
+        HttpContext.Session.SetString(ProgressKey, progresoRestaurado ?? string.Empty);
+        HttpContext.Session.SetString("codigoActual", codigoSesion.Trim());
+        HttpContext.Session.SetString("codigoSalaActual", codigoSala.Trim());
+        HttpContext.Session.SetInt32("tiempoRestanteSegundos", tiempoRestante);
+
+        try
+        {
+            _bd.RegistrarSalaActual(nombreParticipante, salaId.Value);
+        }
+        catch
+        {
+            // no crítico, continuar de todas formas
+        }
+
+        var dest = salaId.Value switch
+        {
+            1 => nameof(Coudet),
+            2 => nameof(Acuna),
+            3 => nameof(Demichelis),
+            4 => nameof(Tapia),
+            5 => nameof(Scaloni),
+            6 => nameof(Donofrio),
+            7 => nameof(DiCarlo),
+            _ => nameof(Index)
+        };
+
+        if (string.Equals(dest, nameof(Coudet), StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ShowIntro"] = IntroVideoPath;
+        }
+        else if (string.Equals(dest, nameof(Acuna), StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ShowIntro"] = AcunaIntroVideoPath;
+        }
+
+        TempData["mensajeExito"] = $"Código válido. Bienvenido, {nombreParticipante}! Redirigiendo a la sala.";
+        return RedirectToAction(dest);
+    }
+
+    [HttpPost]
     public IActionResult CargarProgreso(string codigoSesion)
     {
         if (string.IsNullOrWhiteSpace(codigoSesion))
@@ -73,13 +141,12 @@ public class HomeController : Controller
         }
 
         var (nombreParticipante, progreso, tiempoRestante) = resultado.Value;
-        
-        // Restaurar la sesión del jugador
+
         HttpContext.Session.SetString("participante", nombreParticipante);
         HttpContext.Session.SetString(ProgressKey, progreso);
         HttpContext.Session.SetString("codigoActual", codigoSesion.Trim());
         HttpContext.Session.SetInt32("tiempoRestanteSegundos", tiempoRestante);
-        
+
         TempData["mensajeExito"] = $"Bienvenido de vuelta, {nombreParticipante}! Tu progreso ha sido restaurado.";
         return RedirectToAction(nameof(Index));
     }
@@ -126,7 +193,8 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Inicializar timer si es primera vez
+        PrepareRoomView(nameof(Coudet));
+
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
         {
@@ -270,7 +338,8 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        // Verificar que no se acabó el tiempo
+        PrepareRoomView("Acuna");
+
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
         {
@@ -291,7 +360,6 @@ public class HomeController : Controller
             ViewBag.IntroVideo = null;
         }
 
-        ViewBag.Mensaje = TempData["mensaje"];
         ViewBag.Correcto = TempData["correcto"];
         ViewBag.Progress = GetProgress();
         ViewBag.Participante = GetParticipanteActual();
@@ -350,6 +418,8 @@ public class HomeController : Controller
         {
             return RedirectToAction(nameof(Index));
         }
+
+        PrepareRoomView("Demichelis");
 
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
@@ -421,6 +491,8 @@ public class HomeController : Controller
         {
             return RedirectToAction(nameof(Index));
         }
+
+        PrepareRoomView("Tapia");
 
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
@@ -516,6 +588,8 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        PrepareRoomView("Scaloni");
+
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
         {
@@ -553,12 +627,9 @@ public class HomeController : Controller
             TempData["correcto"] = true;
             return RedirectToNextChallenge();
         }
-        else
-        {
-            TempData["mensaje"] = "La secuencia no quedó grabada. Mirá otra vez el recorrido y repetilo con calma.";
-            TempData["correcto"] = false;
-        }
 
+        TempData["mensaje"] = "La secuencia no quedó grabada. Mirá otra vez el recorrido y repetilo con calma.";
+        TempData["correcto"] = false;
         return RedirectToAction(nameof(Scaloni));
     }
 
@@ -611,6 +682,8 @@ public class HomeController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        PrepareRoomView("Donofrio");
+
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
         {
@@ -645,14 +718,12 @@ public class HomeController : Controller
         ViewBag.Jugadores = jugadores;
         ViewBag.Plantilla = jugadoresAdivinados;
         ViewBag.Objetivo = objetivo;
-        
-        // Obtener el tablero y agrupar por posición
+
         var tableroCompleto = BuildDonofrioBoard(jugadoresAdivinados);
         ViewBag.Arqueros = tableroCompleto.Where(s => s.Categoria == "Arquero").ToList();
         ViewBag.Defensores = tableroCompleto.Where(s => s.Categoria == "Defensor").ToList();
         ViewBag.Mediocampistas = tableroCompleto.Where(s => s.Categoria == "Mediocampista").ToList();
         ViewBag.Delanteros = tableroCompleto.Where(s => s.Categoria == "Delantero").ToList();
-        
         ViewBag.EquipoCompleto = equipoCompleto;
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
@@ -809,7 +880,8 @@ public class HomeController : Controller
         return slots.ToList();
     }
 
-    private sealed class DonofrioSlot
+    // Público porque la vista Donofrio.cshtml castea el ViewBag a este tipo.
+    public sealed class DonofrioSlot
     {
         public string Label { get; set; } = string.Empty;
         public string Categoria { get; set; } = string.Empty;
@@ -825,6 +897,8 @@ public class HomeController : Controller
         {
             return RedirectToAction(nameof(Index));
         }
+
+        PrepareRoomView("Di Carlo");
 
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
         if (tiempoRestante <= 0)
@@ -850,6 +924,8 @@ public class HomeController : Controller
         ViewBag.PartidoGanado = string.Equals(state.Estado, "ganado", StringComparison.OrdinalIgnoreCase);
         ViewBag.PartidoPerdido = string.Equals(state.Estado, "perdido", StringComparison.OrdinalIgnoreCase);
         ViewBag.DiCarloState = state;
+        ViewBag.GolesArgentina = state.GolesArgentina;
+        ViewBag.GolesRival = state.GolesRival;
         return View();
     }
 
@@ -873,37 +949,92 @@ public class HomeController : Controller
 
         var opcionElegida = NormalizeDecision(decision);
         var opcionCorrecta = NormalizeDecision(escenaActual.Correcta);
+        var acierto = string.Equals(opcionElegida, opcionCorrecta, StringComparison.OrdinalIgnoreCase);
 
-        if (string.Equals(opcionElegida, opcionCorrecta, StringComparison.OrdinalIgnoreCase))
+        if (acierto)
         {
-            state.Paso += 1;
-            state.UltimaDecision = decision;
-            state.Mensaje = escenaActual.Exito;
+            // Acertó: si era un ataque, suma gol; si era defensa, evita un gol
+            if (escenaActual.EsAtaque)
+            {
+                state.GolesArgentina += 1;
+            }
+            TempData["mensaje"] = escenaActual.Exito;
+            TempData["correcto"] = true;
+        }
+        else
+        {
+            // Falló: si era un ataque, no pasa nada especial; si era defensa, rival mete gol
+            if (!escenaActual.EsAtaque)
+            {
+                state.GolesRival += 1;
+            }
+            TempData["mensaje"] = escenaActual.Fracaso;
+            TempData["correcto"] = false;
+        }
 
-            if (state.Paso >= GetDiCarloEscenas().Count)
+        // Verificar si ganó (3 goles)
+        if (state.GolesArgentina >= 3)
+        {
+            state.Estado = "ganado";
+            SaveProgress("Di Carlo");
+            HttpContext.Session.SetString(WinKey, "true");
+            SetDiCarloGameState(state);
+            TempData["mensaje"] = $"¡CANTILO GANA 3-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo. ¡Escapás de la sala!";   
+            TempData["correcto"] = true;
+            return RedirectToAction(nameof(Ganaste));
+        }
+
+        // Verificar si perdió antes de llegar al final (rival 3 goles)
+        if (state.GolesRival >= 3)
+        {
+            state.Estado = "perdido";
+            SetDiCarloGameState(state);
+            LimpiarSesion();
+            TempData["mensajeError"] = $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo. La sala se cerró.";
+            return RedirectToAction(nameof(Perdiste));
+        }
+
+        // Avanzar a la siguiente escena
+        state.Paso += 1;
+        state.UltimaDecision = decision;
+
+        // Verificar si terminó el partido (todas las escenas jugadas)
+        if (state.Paso >= GetDiCarloEscenas().Count)
+        {
+            // Si Cantilo tiene 3, ganó
+            if (state.GolesArgentina >= 3)
             {
                 state.Estado = "ganado";
                 SaveProgress("Di Carlo");
                 HttpContext.Session.SetString(WinKey, "true");
                 SetDiCarloGameState(state);
-                TempData["mensaje"] = "Ganaste el partido. La salida está abierta y podés escapar de la sala.";
+                TempData["mensaje"] = $"¡CANTILO GANA 3-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo.";
                 TempData["correcto"] = true;
                 return RedirectToAction(nameof(Ganaste));
             }
-
-            SetDiCarloGameState(state);
-            TempData["mensaje"] = escenaActual.Exito;
-            TempData["correcto"] = true;
-            return RedirectToAction(nameof(DiCarlo));
+            // Si están empatados, van a penales
+            else if (state.GolesArgentina == state.GolesRival)
+            {
+                state.EnPenales = true;
+                state.Paso -= 1; // Para que muestre la última escena
+                SetDiCarloGameState(state);
+                TempData["mensaje"] = $"¡Cantilo y Los Robots empataron {state.GolesArgentina}-{state.GolesRival}! Vamos a PENALES. Un tiro decide el partido.";
+                TempData["correcto"] = false;
+                return RedirectToAction(nameof(DiCarlo));
+            }
+            // Si la rival tiene más, perdió
+            else
+            {
+                state.Estado = "perdido";
+                SetDiCarloGameState(state);
+                LimpiarSesion();
+                TempData["mensajeError"] = $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo. La sala se cerró.";
+                return RedirectToAction(nameof(Perdiste));
+            }
         }
 
-        state.Estado = "perdido";
-        state.Mensaje = escenaActual.Fracaso;
         SetDiCarloGameState(state);
-
-        LimpiarSesion();
-        TempData["mensajeError"] = "Perdiste el partido. La sala se cerró.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(DiCarlo));
     }
 
     private List<JugadorDiCarlo> GetEquipoDonofrioActual()
@@ -951,30 +1082,63 @@ public class HomeController : Controller
         {
             new()
             {
-                Titulo = "Falcao deja mano a mano a Julián Álvarez",
-                Texto = "Falcao hace una diagonal perfecta y deja a Julián Álvarez mano a mano con la defensa. Hay un ángulo para definir el partido.",
+                Titulo = "Apertura: Falcao vs Los Robots",
+                Texto = "Falcao hace una diagonal perfecta y deja a Julián Álvarez mano a mano contra la defensa robot. ¿Por dónde rematas?",
                 Opciones = new[] { "Patear a la izquierda", "Patear al centro", "Patear a la derecha" },
                 Correcta = "Patear a la derecha",
-                Exito = "Julián Álvarez encuentra el ángulo correcto y dispara a la derecha: el balón se mete en el ángulo y abrís el marcador.",
-                Fracaso = "Elegiste mal: la defensa adivina la jugada y el partido se pone cuesta arriba. Perdiste el partido y la sala se cerró."
+                Exito = "¡GOOOOL! Julián mete en escuadra. 1-0 Cantilo vs Los Robots de Di Carlo.",
+                Fracaso = "¡No! El portero robot vuela y desvía. Los Robots sacan la pelota de contragolpe.",
+                EsAtaque = true
             },
             new()
             {
-                Titulo = "La contra llega con velocidad",
-                Texto = "El rival lo intenta de contra. La pelota llega a la línea del mediocampo y tenés que decidir por dónde salir para romper la presión.",
-                Opciones = new[] { "Pedir el centro", "Pase al mediocampo", "Buscar la pared" },
-                Correcta = "Pase al mediocampo",
-                Exito = "El pase al mediocampo corta la presión y armás una jugada clara para liquidar el partido.",
-                Fracaso = "La presión te ganó y el rival te sacó la pelota. Se te fue la chance de sentenciar y perdés el partido."
+                Titulo = "Ataque robot: Centro al área",
+                Texto = "Los Robots de Di Carlo centran peligrosamente. Estás defendiendo a Cantilo y tenés que despejar o interceptar.",
+                Opciones = new[] { "Despejar al fondo del campo", "Cortar el pase", "Hacer falta" },
+                Correcta = "Cortar el pase",
+                Exito = "¡Excelente defensa! Recuperás la pelota limpio para Cantilo.",
+                Fracaso = "¡No! Un delantero robot conecta. El balón entra en la red. 1-1.",
+                EsAtaque = false
             },
             new()
             {
-                Titulo = "Último minuto y definición",
-                Texto = "La defensa rival se desploma. El equipo te pide decidir entre un centro, un remate o un pase al hueco. La última decisión define el resultado.",
-                Opciones = new[] { "Centro al área", "Remate limpio", "Pase al hueco" },
-                Correcta = "Pase al hueco",
-                Exito = "El pase al hueco deja libre a Julián y lo define: gol del partido. Ganaste 3-0 y logras escapar.",
-                Fracaso = "La última decisión fue mala y el partido termina en derrota. El sueño de escapar se rompe."
+                Titulo = "Contra de Cantilo a toda velocidad",
+                Texto = "Cantilo tiene espacio. La cancha está abierta. Enzo Fernández te pasa al hueco.",
+                Opciones = new[] { "Pase al costado", "Conducir y avanzar", "Tiro de larga distancia" },
+                Correcta = "Conducir y avanzar",
+                Exito = "¡Encarás a los robots! Sorteás dos defensores mecánicos y crosás. ¡GOOOOL de Cantilo! 2-1.",
+                Fracaso = "¡Los circuitos de los robots lo ven venir! Pierdes el balón. Los Robots contraatacan.",
+                EsAtaque = true
+            },
+            new()
+            {
+                Titulo = "Peligro en el área chica",
+                Texto = "Un tiro de esquina de Los Robots. La pelota viene al primer palo. ¿Qué haces?",
+                Opciones = new[] { "Salir a despejar", "Dejarlo pasar", "Entrecortado en las manos" },
+                Correcta = "Salir a despejar",
+                Exito = "¡Bien! Despejás antes de que el robot conecte. Esquivaste el peligro.",
+                Fracaso = "¡GOOOOL ROBOTS! Un cabezazo mecánico perfecto. 2-2.",
+                EsAtaque = false
+            },
+            new()
+            {
+                Titulo = "Presión ofensiva: Minuto 85",
+                Texto = "Los Robots tienen que defender. Cantilo genera una oportunidad clarísima. Falcao define solo.",
+                Opciones = new[] { "Tiro suave al ángulo", "Remate potente al medio", "Dribbling al arquero" },
+                Correcta = "Tiro suave al ángulo",
+                Exito = "¡Tiro perfecto! El arquero robot vuela pero no llega. ¡GOOOOL DE CANTILO! 3-2.",
+                Fracaso = "¡No! El portero robot lo ve venir y tapona. Último intento fallido.",
+                EsAtaque = true
+            },
+            new()
+            {
+                Titulo = "Últimos segundos: Defensa total",
+                Texto = "Quedan segundos. Los Robots atacan desesperados. Cantilo defiende con todo. Todo o nada.",
+                Opciones = new[] { "Marcar apretado", "Permitir el balón y defender", "Agredir temprano" },
+                Correcta = "Marcar apretado",
+                Exito = "¡TFIIIIIIN! Cantilo gana 3-2 contra Los Robots de Di Carlo. ¡Escapás de la sala!",
+                Fracaso = "¡NO! Los Robots meten otra. 3-3. Vamos a penales vs Los Robots.",
+                EsAtaque = false
             }
         };
     }
@@ -1004,7 +1168,22 @@ public class HomeController : Controller
         return normalized.Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant();
     }
 
-    private sealed class DiCarloEscena
+    private static string GetChallengeNameBySalaId(int salaId)
+    {
+        return salaId switch
+        {
+            1 => "Coudet",
+            2 => "Acuna",
+            3 => "Demichelis",
+            4 => "Tapia",
+            5 => "Scaloni",
+            6 => "Donofrio",
+            7 => "Di Carlo",
+            _ => "Coudet"
+        };
+    }
+
+    public sealed class DiCarloEscena
     {
         public string Titulo { get; set; } = string.Empty;
         public string Texto { get; set; } = string.Empty;
@@ -1012,6 +1191,7 @@ public class HomeController : Controller
         public string Correcta { get; set; } = string.Empty;
         public string Exito { get; set; } = string.Empty;
         public string Fracaso { get; set; } = string.Empty;
+        public bool EsAtaque { get; set; } = true;
     }
 
     private sealed class DiCarloGameState
@@ -1020,6 +1200,10 @@ public class HomeController : Controller
         public string Estado { get; set; } = "jugando";
         public string? UltimaDecision { get; set; }
         public string? Mensaje { get; set; }
+        public int GolesArgentina { get; set; } = 0;
+        public int GolesRival { get; set; } = 0;
+        public bool EnPenales { get; set; } = false;
+        public int? ResultadoPenales { get; set; } = null;
     }
 
     private static List<DiCarloSlot> BuildDiCarloBoard(List<JugadorDiCarlo> jugadoresAdivinados)
@@ -1090,17 +1274,69 @@ public class HomeController : Controller
         }
 
         var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
-        // Guardar el tiempo final de victoria
         GuardarTiempoRestante(tiempoRestante);
         ViewBag.Progress = GetProgress();
         ViewBag.TiempoRestanteSegundos = tiempoRestante;
         return View();
     }
 
+    public IActionResult Perdiste()
+    {
+        var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+        ViewBag.TiempoRestanteSegundos = tiempoRestante;
+        return View();
+    }
+
+    [HttpPost]
+    [HttpPost]
+    public IActionResult Penales(string decision)
+    {
+        if (!CanAccessChallenge("Di Carlo"))
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        var state = GetDiCarloGameState();
+        if (!state.EnPenales)
+        {
+            return RedirectToAction(nameof(DiCarlo));
+        }
+
+        // Un penal decide el partido
+        var random = new Random();
+        var arcosCorner = new[] { "arriba-izquierda", "arriba-derecha", "abajo-izquierda", "abajo-derecha", "centro" };
+        var tipoTiro = new[] { "arriba", "abajo", "izquierda", "derecha", "centro" };
+
+        var direccionDecision = NormalizeDecision(decision);
+        var direccionCorrecta = NormalizeDecision(arcosCorner[random.Next(arcosCorner.Length)]);
+
+        if (string.Equals(direccionDecision, direccionCorrecta, StringComparison.OrdinalIgnoreCase))
+        {
+            // Ganó en penales Cantilo
+            state.Estado = "ganado";
+            state.ResultadoPenales = 1;
+            SaveProgress("Di Carlo");
+            HttpContext.Session.SetString(WinKey, "true");
+            SetDiCarloGameState(state);
+            TempData["mensaje"] = $"¡CANTILO GANA EN PENALES {state.GolesArgentina + 1}-{state.GolesRival} a Los Robots de Di Carlo! ¡Escapás de la sala!";
+            TempData["correcto"] = true;
+            return RedirectToAction(nameof(Ganaste));
+        }
+        else
+        {
+            // Perdió en penales contra Los Robots
+            state.Estado = "perdido";
+            state.ResultadoPenales = 0;
+            SetDiCarloGameState(state);
+            LimpiarSesion();
+            TempData["mensajeError"] = $"¡Cantilo perdió en penales {state.GolesArgentina}-{state.GolesRival + 1} contra Los Robots de Di Carlo! La sala se cerró.";
+            return RedirectToAction(nameof(Perdiste));
+        }
+    }
+
     [HttpPost]
     public IActionResult Perder()
     {
-        // Guardar el tiempo final (0 porque se acabó)
         GuardarTiempoRestante(0);
         LimpiarSesion();
         TempData["mensajeError"] = "Se acabó el tiempo. La partida finalizo.";
@@ -1138,7 +1374,6 @@ public class HomeController : Controller
 
     private void SaveProgress(string challenge)
     {
-        // Si el formulario incluyó el tiempo restante, actualizar la sesión antes de persistir.
         try
         {
             if (Request?.HasFormContentType == true && Request.Form.ContainsKey("tiempoRestanteSegundos"))
@@ -1168,15 +1403,26 @@ public class HomeController : Controller
             var codigoActual = HttpContext.Session.GetString("codigoActual");
             var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
 
-            if (string.IsNullOrWhiteSpace(codigoActual))
-            {
-                codigoActual = GenerarCodigoUnico();
-                HttpContext.Session.SetString("codigoActual", codigoActual);
-            }
+            // No generar ni persistir un código de sesión si el participante es el valor por defecto.
+            var esParticipantePorDefecto = string.Equals(nombreParticipante, "Jugador", StringComparison.OrdinalIgnoreCase);
 
-            _bd.GuardarCodigo(codigoActual, nombreParticipante, progressStr, tiempoRestante);
-            GuardarTiempoRestante(tiempoRestante);
-            TempData["CodigoSesion"] = codigoActual;
+            if (!esParticipantePorDefecto)
+            {
+                if (string.IsNullOrWhiteSpace(codigoActual))
+                {
+                    codigoActual = GenerarCodigoUnico();
+                    HttpContext.Session.SetString("codigoActual", codigoActual);
+                }
+
+                _bd.GuardarCodigo(codigoActual, nombreParticipante, progressStr, tiempoRestante);
+                GuardarTiempoRestante(tiempoRestante);
+
+                TempData["CodigoSesion"] = codigoActual;
+                var salaId = GetSalaIdForChallenge(challenge);
+                var codigoSala = _bd.ObtenerCodigoSalaPorId(salaId) ?? string.Empty;
+                TempData["CodigoSala"] = codigoSala;
+                HttpContext.Session.SetString("codigoSalaActual", codigoSala ?? string.Empty);
+            }
         }
     }
 
@@ -1214,9 +1460,7 @@ public class HomeController : Controller
         HttpContext.Session.Remove("codigoActual");
         HttpContext.Session.Remove("tiempoRestanteSegundos");
         HttpContext.Session.Remove("donofrioPlantilla");
-        HttpContext.Session.Remove("dicarloPlantilla");
         HttpContext.Session.Remove("dicarloPartido");
-
         foreach (var room in ChallengeOrder)
         {
             HttpContext.Session.Remove(GetIntroSessionKey(room));
@@ -1229,7 +1473,7 @@ public class HomeController : Controller
         var random = new Random();
         var codigo = new StringBuilder();
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 3; i++)
         {
             codigo.Append(caracteres[random.Next(caracteres.Length)]);
         }
@@ -1311,6 +1555,7 @@ public class HomeController : Controller
             }
         }
 
+        GuardarTiempoActualSiHayCodigo();
         return RedirectToAction(nameof(Ganaste));
     }
 
@@ -1326,6 +1571,48 @@ public class HomeController : Controller
         ViewBag.HabitacionActual = roomName;
         ViewBag.PartidaEnCurso = true;
         ViewBag.Progress = GetProgress();
+
+        var codigoSesion = HttpContext.Session.GetString("codigoActual") ?? string.Empty;
+
+        // Mostrar código de sesión sólo si hay progreso o el participante no es el valor por defecto
+        var esParticipantePorDefecto = string.Equals(ViewBag.Participante as string, "Jugador", StringComparison.OrdinalIgnoreCase);
+        var progress = GetProgress();
+        if (!string.IsNullOrWhiteSpace(codigoSesion) && (!esParticipantePorDefecto || progress.Count > 0))
+        {
+            ViewBag.CodigoSesion = codigoSesion;
+        }
+        else
+        {
+            ViewBag.CodigoSesion = string.Empty;
+        }
+
+        try
+        {
+            var salaId = GetSalaIdForChallenge(roomName);
+            var codigoSala = _bd.ObtenerCodigoSalaPorId(salaId) ?? string.Empty;
+
+            // Si la BD no responde o no tiene el código, usar un mapeo por defecto
+            if (string.IsNullOrWhiteSpace(codigoSala))
+            {
+                codigoSala = salaId switch
+                {
+                    1 => "Chacho",
+                    2 => "Huevo",
+                    3 => "Micho",
+                    4 => "Chiqui",
+                    5 => "Qatar",
+                    6 => "Muñeco",
+                    7 => "Mafia",
+                    _ => string.Empty
+                };
+            }
+
+            ViewBag.CodigoSala = codigoSala;
+        }
+        catch
+        {
+            ViewBag.CodigoSala = string.Empty;
+        }
     }
 
     private string GetParticipanteActual()

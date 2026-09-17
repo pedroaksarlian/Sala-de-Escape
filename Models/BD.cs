@@ -204,14 +204,57 @@ public class BD
         {
             using var connection = new SqlConnection(_connectionString);
             var result = connection.QuerySingleOrDefault<dynamic>(
-                "SELECT TOP 1 NombreParticipante, Minutos, Segundos, Codigo FROM Partida WHERE Codigo = @Codigo ORDER BY Id DESC",
+                "SELECT TOP 1 NombreParticipante, Minutos, Segundos, IdSala, Codigo FROM Partida WHERE Codigo = @Codigo ORDER BY Id DESC",
                 new { Codigo = codigo });
 
             if (result == null)
                 return null;
 
             var tiempo = ((int)(result.Minutos ?? 0) * 60) + ((int)(result.Segundos ?? 0));
-            return (result.NombreParticipante, string.Empty, Math.Max(0, tiempo));
+            var salaId = (int?)(result.IdSala) ?? 1;
+            var progreso = salaId switch
+            {
+                1 => "Coudet",
+                2 => "Acuna",
+                3 => "Demichelis",
+                4 => "Tapia",
+                5 => "Scaloni",
+                6 => "Donofrio",
+                7 => "Di Carlo",
+                _ => "Coudet"
+            };
+
+            return (result.NombreParticipante, progreso, Math.Max(0, tiempo));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public int? ObtenerSalaIdPorCodigo(string codigo)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.QuerySingleOrDefault<int?>(
+                "SELECT TOP 1 Id FROM Sala WHERE UPPER(Codigo) = UPPER(@Codigo)",
+                new { Codigo = codigo });
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public string? ObtenerCodigoSalaPorId(int id)
+    {
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+            return connection.QuerySingleOrDefault<string>(
+                "SELECT TOP 1 Codigo FROM Sala WHERE Id = @Id",
+                new { Id = id });
         }
         catch
         {

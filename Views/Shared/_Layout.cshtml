@@ -29,6 +29,7 @@
             </div>
             <div class="room-status-right">
                 <span class="status-pill">Partida en curso</span>
+                <button id="showCodesBtn" class="btn btn-sm btn-outline-light ms-2" type="button" data-bs-toggle="modal" data-bs-target="#codesModal">Mostrar códigos</button>
             </div>
         </div>
     }
@@ -160,5 +161,218 @@
             };
         };
     </script>
+
+    <!-- Codes modal -->
+    <div class="modal fade" id="codesModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Códigos de la partida</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Estos códigos te permiten volver a la sala y retomar la partida donde la dejaste.</p>
+                    <dl>
+                        <dt>Código de sala</dt>
+                        <dd><strong>@(ViewBag.CodigoSala as string ?? "(no disponible)")</strong></dd>
+                        <dt>Código de sesión</dt>
+                        <dd><strong>@(ViewBag.CodigoSesion as string ?? (Context.Session.GetString("codigoActual") ?? "(no disponible)"))</strong></dd>
+                    </dl>
+                    <p class="small text-muted">Anotá ambos códigos y guardalos en un lugar seguro.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @*
+        Visor de historia de la sala.
+        Cada vista de sala define, dentro de su bloque @@{ }:
+            ViewBag.HistoriaImagenes = new[] { "/img/Foto.jpg", ... };
+            ViewBag.HistoriaEfecto   = "fade" | "slide" | "zoom" | "flip";
+            ViewBag.HistoriaTitulo   = "Texto del badge";
+        No toca la lógica de la sala: se muestra encima y se puede cerrar.
+    *@
+    @{
+        var historiaImagenes = ViewBag.HistoriaImagenes as IEnumerable<string>;
+        var historiaLista = historiaImagenes?.Where(x => !string.IsNullOrWhiteSpace(x)).ToList() ?? new List<string>();
+        var historiaEfecto = ViewBag.HistoriaEfecto as string ?? "fade";
+        var historiaTitulo = ViewBag.HistoriaTitulo as string ?? "La historia de la sala";
+    }
+
+    @if (historiaLista.Count > 0)
+    {
+        <div id="historiaOverlay" class="historia-overlay" role="dialog" aria-modal="true" aria-label="@historiaTitulo" hidden>
+            <div class="historia-dialog">
+                <div class="historia-head">
+                    <span class="badge">@historiaTitulo</span>
+                    <button type="button" class="historia-close" id="historiaClose" aria-label="Cerrar">&times;</button>
+                </div>
+
+                <div class="historia-stage fx-@historiaEfecto" id="historiaStage">
+                    <img id="historiaImg" src="@Url.Content(historiaLista[0])" alt="@historiaTitulo" />
+                    <p class="historia-fallback" id="historiaFallback" hidden>No se pudo cargar esta foto.</p>
+                    @if (historiaLista.Count > 1)
+                    {
+                        <button type="button" class="historia-nav prev" id="historiaPrev" aria-label="Foto anterior">&#10094;</button>
+                        <button type="button" class="historia-nav next" id="historiaNext" aria-label="Foto siguiente">&#10095;</button>
+                    }
+                </div>
+
+                <div class="historia-foot">
+                    @if (historiaLista.Count > 1)
+                    {
+                        <div class="historia-dots" id="historiaDots"></div>
+                        <span class="historia-hint">Usá las flechas ← → para pasar de foto · Esc para cerrar</span>
+                    }
+                    else
+                    {
+                        <span></span>
+                        <span class="historia-hint">Esc o la X para cerrar</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                var fotos = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(historiaLista.Select(f => Url.Content(f))));
+                var claveSala = 'historiaVista:' + window.location.pathname.toLowerCase();
+                var overlay = document.getElementById('historiaOverlay');
+                var stage = document.getElementById('historiaStage');
+                var img = document.getElementById('historiaImg');
+                var dotsBox = document.getElementById('historiaDots');
+                var prevBtn = document.getElementById('historiaPrev');
+                var nextBtn = document.getElementById('historiaNext');
+                var closeBtn = document.getElementById('historiaClose');
+                var fallback = document.getElementById('historiaFallback');
+                var i = 0;
+                var animando = false;
+
+                // Si un archivo está roto o falta, mostramos un aviso en vez del ícono
+                // de imagen rota del navegador.
+                img.addEventListener('error', function () {
+                    img.hidden = true;
+                    if (fallback) { fallback.hidden = false; }
+                });
+                img.addEventListener('load', function () {
+                    img.hidden = false;
+                    if (fallback) { fallback.hidden = true; }
+                });
+
+                function yaVista() {
+                    try { return sessionStorage.getItem(claveSala) === '1'; } catch (e) { return false; }
+                }
+
+                function marcarVista() {
+                    try { sessionStorage.setItem(claveSala, '1'); } catch (e) { /* modo privado */ }
+                }
+
+                // Precargamos para que la transición no muestre un hueco en blanco.
+                fotos.forEach(function (src) { var p = new Image(); p.src = src; });
+
+                if (dotsBox) {
+                    fotos.forEach(function (_, idx) {
+                        var d = document.createElement('button');
+                        d.type = 'button';
+                        d.className = 'historia-dot' + (idx === 0 ? ' active' : '');
+                        d.setAttribute('aria-label', 'Foto ' + (idx + 1));
+                        d.addEventListener('click', function () { mostrar(idx); });
+                        dotsBox.appendChild(d);
+                    });
+                }
+
+                function pintarEstado() {
+                    if (dotsBox) {
+                        Array.prototype.forEach.call(dotsBox.children, function (d, idx) {
+                            d.classList.toggle('active', idx === i);
+                        });
+                    }
+                    if (prevBtn) { prevBtn.disabled = (i === 0); }
+                    if (nextBtn) { nextBtn.disabled = (i === fotos.length - 1); }
+                }
+
+                function mostrar(destino) {
+                    if (animando || destino === i || destino < 0 || destino >= fotos.length) return;
+                    var haciaAtras = destino < i;
+                    animando = true;
+
+                    img.classList.remove('is-entering', 'back');
+                    img.classList.add('is-leaving');
+                    if (haciaAtras) { img.classList.add('back'); }
+
+                    setTimeout(function () {
+                        i = destino;
+                        img.src = fotos[i];
+                        img.classList.remove('is-leaving', 'back');
+                        img.classList.add('is-entering');
+                        if (haciaAtras) { img.classList.add('back'); }
+                        pintarEstado();
+                        setTimeout(function () {
+                            img.classList.remove('is-entering', 'back');
+                            animando = false;
+                        }, 700);
+                    }, 380);
+                }
+
+                function abrir() {
+                    marcarVista();
+                    overlay.hidden = false;
+                    // un tick para que la transición de opacidad se dispare
+                    requestAnimationFrame(function () { overlay.classList.add('is-open'); });
+                    img.classList.add('is-entering');
+                    setTimeout(function () { img.classList.remove('is-entering'); }, 700);
+                    document.body.style.overflow = 'hidden';
+                    pintarEstado();
+                }
+
+                function cerrar() {
+                    overlay.classList.remove('is-open');
+                    document.body.style.overflow = '';
+                    setTimeout(function () { overlay.hidden = true; }, 350);
+                }
+
+                window.abrirHistoriaSala = abrir;
+
+                if (closeBtn) { closeBtn.addEventListener('click', cerrar); }
+                if (prevBtn) { prevBtn.addEventListener('click', function () { mostrar(i - 1); }); }
+                if (nextBtn) { nextBtn.addEventListener('click', function () { mostrar(i + 1); }); }
+
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) { cerrar(); }
+                });
+
+                document.addEventListener('keydown', function (e) {
+                    if (overlay.hidden) return;
+                    if (e.key === 'Escape') { cerrar(); }
+                    else if (e.key === 'ArrowRight') { mostrar(i + 1); }
+                    else if (e.key === 'ArrowLeft') { mostrar(i - 1); }
+                });
+
+                // Botón "Ver la historia" dentro de la sala, si existe.
+                var reopen = document.getElementById('historiaReopen');
+                if (reopen) { reopen.addEventListener('click', abrir); }
+
+                // Se abre solo la primera vez que entrás a la sala, esperando a que
+                // termine el video de intro. Después de cada decisión (que recarga la
+                // página) ya queda marcada como vista y no vuelve a aparecer sola.
+                function abrirCuandoSePueda() {
+                    var intro = document.getElementById('introVideoOverlay');
+                    if (intro && document.body.contains(intro)) {
+                        setTimeout(abrirCuandoSePueda, 400);
+                        return;
+                    }
+                    abrir();
+                }
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (yaVista()) { return; }
+                    setTimeout(abrirCuandoSePueda, 350);
+                });
+            })();
+        </script>
+    }
 </body>
 </html>

@@ -1,65 +1,82 @@
-@{
+﻿@{
     ViewData["Title"] = "Di Carlo";
+    ViewBag.HistoriaTitulo = "Di Carlo: Pezzella no pasa";
+    ViewBag.HistoriaEfecto = "slide";
+    ViewBag.HistoriaImagenes = new[]
+    {
+        "/img/Di%20Carlo.jfif",
+        "/img/Pezzela%20No%20Pasa.jfif",
+        "/img/Pezzela%20no%20Pasa%202.0.jfif"
+    };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
     var equipo = ViewBag.EquipoDonofrio as List<TP06.Models.JugadorDiCarlo> ?? new List<TP06.Models.JugadorDiCarlo>();
-    dynamic escena = ViewBag.Escena;
-    var opciones = (escena != null && escena.Opciones != null)
-        ? ((IEnumerable<string>)escena.Opciones).ToArray()
-        : Array.Empty<string>();
+    var escena = ViewBag.Escena as TP06.Controllers.HomeController.DiCarloEscena;
+    var titulo = escena?.Titulo ?? "La última jugada";
+    var texto = escena?.Texto ?? "El partido está en una situación decisiva. Elegí bien para seguir vivo en la sala.";
+    var opciones = escena?.Opciones ?? Array.Empty<string>();
     var partidoGanado = ViewBag.PartidoGanado is bool value2 && value2;
     var partidoPerdido = ViewBag.PartidoPerdido is bool value3 && value3;
+    var golesArgentina = ViewBag.GolesArgentina is int gaval ? gaval : 0;
+    var golesRival = ViewBag.GolesRival is int grval ? grval : 0;
+    var enPenales = ViewBag.EnPenales is bool epval && epval;
 }
 
 @Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
 
     <div class="challenge-panel dicarlo-panel">
         <span class="badge">Desafío 7 · Di Carlo</span>
-        <h1>Final de la sala</h1>
+        <h1>La Final</h1>
         <p>
-            El equipo que armaste se juega la última chance de escapar. Tomá decisiones con calma y elegí la jugada correcta.
+        Llegaste hasta acá con la suerte del chacho, el aleman de micho, el equipo de donofrio y otras habilidades que fuiste aprendiendo. Ahora solo queda una sola cosa: JUGAR LA FINAL.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
         {
-            <div class="alert @(correcto ? "alert-success" : "alert-danger")">@mensaje</div>
+            <div class="alert @(correcto ? "alert-success decision-correct" : "alert-danger decision-wrong")">
+                <div class="decision-feedback">
+                    <span class="decision-icon">@(correcto ? "✓" : "✗")</span>
+                    <div class="decision-text">
+                        <strong>@(correcto ? "¡ACIERTO!" : "¡ERROR!")</strong>
+                        <p>@mensaje</p>
+                    </div>
+                </div>
+            </div>
         }
 
         <div class="dicarlo-match-shell">
             <div class="dicarlo-field">
                 <div class="dicarlo-match-header">
                     <span class="match-badge">Marcador</span>
-                    <strong>0 - 0</strong>
+                    <div class="match-score">
+                        <span class="team-argentina">🇦🇷 Cantilo <strong>@golesArgentina</strong></span>
+                        <span class="score-separator">-</span>
+                        <span class="team-rival"><strong>@golesRival</strong> Los Robots 🤖</span>
+                    </div>
                 </div>
 
+                @if (enPenales)
+                {
+                    <div class="penales-indicator">
+                        <strong>¡PENALES!</strong>
+                        <p>Un tiro desde los 12 pasos puede salvarte o condenarte.</p>
+                    </div>
+                }
+
                 <div class="dicarlo-match-body">
-                    @if (escena != null)
-                    {
-                        <h3>@escena.Titulo</h3>
-                        <p>@escena.Texto</p>
-                    }
-                    else
-                    {
-                        <h3>La última jugada</h3>
-                        <p>El partido está en una situación decisiva. Elegí bien para seguir vivo en la sala.</p>
-                    }
+                    <h3>@titulo</h3>
+                    <p>@texto</p>
                 </div>
             </div>
 
             <div class="dicarlo-clue-box">
-                <div class="clue-header">Situación decisiva</div>
+                <div class="clue-header">Situación actual</div>
                 <div class="clue-text">
-                    @if (escena != null)
-                    {
-                        @escena.Texto
-                    }
-                    else
-                    {
-                        <text>El equipo necesita una decisión clave para sentenciar el partido.</text>
-                    }
+                    @texto
                 </div>
             </div>
 
@@ -86,17 +103,43 @@
 
                 @if (!partidoGanado && !partidoPerdido)
                 {
-                    <form asp-controller="Home" asp-action="DiCarlo" method="post" class="challenge-form dicarlo-form">
-                        <label for="decision">Decisión</label>
-                        <div class="dicarlo-choice-grid">
-                            @foreach (var opcion in opciones)
-                            {
-                                <button type="submit" name="decision" value="@opcion" class="btn dicarlo-choice-btn">
-                                    @opcion
+                    @if (!enPenales)
+                    {
+                        <form asp-controller="Home" asp-action="DiCarlo" method="post" class="challenge-form dicarlo-form">
+                            <label for="decision">Decisión</label>
+                            <div class="dicarlo-choice-grid">
+                                @foreach (var opcion in opciones)
+                                {
+                                    <button type="submit" name="decision" value="@opcion" class="btn dicarlo-choice-btn">
+                                        @opcion
+                                    </button>
+                                }
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-controller="Home" asp-action="Penales" method="post" class="challenge-form dicarlo-form">
+                            <label for="decision">¿Hacia dónde pateás?</label>
+                            <div class="dicarlo-choice-grid">
+                                <button type="submit" name="decision" value="arriba-izquierda" class="btn dicarlo-choice-btn">
+                                    Arriba Izquierda ↖️
                                 </button>
-                            }
-                        </div>
-                    </form>
+                                <button type="submit" name="decision" value="arriba-derecha" class="btn dicarlo-choice-btn">
+                                    Arriba Derecha ↗️
+                                </button>
+                                <button type="submit" name="decision" value="centro" class="btn dicarlo-choice-btn">
+                                    Centro 🎯
+                                </button>
+                                <button type="submit" name="decision" value="abajo-izquierda" class="btn dicarlo-choice-btn">
+                                    Abajo Izquierda ↙️
+                                </button>
+                                <button type="submit" name="decision" value="abajo-derecha" class="btn dicarlo-choice-btn">
+                                    Abajo Derecha ↘️
+                                </button>
+                            </div>
+                        </form>
+                    }
                 }
             </div>
 

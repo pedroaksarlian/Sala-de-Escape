@@ -1,10 +1,16 @@
-@{
+﻿@{
     ViewData["Title"] = "Donofrio / Gallardo";
+    ViewBag.HistoriaTitulo = "Gallardo y D'Onofrio";
+    ViewBag.HistoriaEfecto = "fade";
+    ViewBag.HistoriaImagenes = new[] { "/img/GallaYDono.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
     var plantilla = ViewBag.Plantilla as List<TP06.Models.JugadorDiCarlo> ?? new List<TP06.Models.JugadorDiCarlo>();
     var objetivo = ViewBag.Objetivo as TP06.Models.JugadorDiCarlo;
-    var tablero = ViewBag.Tablero as List<dynamic> ?? new List<dynamic>();
+    var arqueros = ViewBag.Arqueros as List<TP06.Controllers.HomeController.DonofrioSlot> ?? new List<TP06.Controllers.HomeController.DonofrioSlot>();
+    var defensores = ViewBag.Defensores as List<TP06.Controllers.HomeController.DonofrioSlot> ?? new List<TP06.Controllers.HomeController.DonofrioSlot>();
+    var mediocampistas = ViewBag.Mediocampistas as List<TP06.Controllers.HomeController.DonofrioSlot> ?? new List<TP06.Controllers.HomeController.DonofrioSlot>();
+    var delanteros = ViewBag.Delanteros as List<TP06.Controllers.HomeController.DonofrioSlot> ?? new List<TP06.Controllers.HomeController.DonofrioSlot>();
     var equipoCompleto = ViewBag.EquipoCompleto is bool value2 && value2;
 }
 
@@ -12,12 +18,13 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
 
     <div class="challenge-panel donofrio-panel">
         <span class="badge">Desafío 6 · Donofrio + Gallardo</span>
         <h1>Armar el equipo</h1>
         <p>
-            Adiviná a cada jugador por la pista y completá la formación del once.
+            Aca el que organiza las cosas es el presi, vos solo tenes que armar el equipo con lo que el pide. Resolve las preguntas y el equipo se va a ir armando solo. Cuando completes el equipo, vas a poder continuar con el desafío.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
@@ -29,7 +36,7 @@
             <div class="donofrio-board">
                 <!-- Fila 1: Arquero -->
                 <div class="donofrio-row row-arquero">
-                    @foreach (var slot in (ViewBag.Arqueros ?? new List<object>()))
+                    @foreach (var slot in arqueros)
                     {
                         var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
                         <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
@@ -48,7 +55,7 @@
 
                 <!-- Fila 2: Defensores -->
                 <div class="donofrio-row row-defensores">
-                    @foreach (var slot in (ViewBag.Defensores ?? new List<object>()))
+                    @foreach (var slot in defensores)
                     {
                         var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
                         <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
@@ -67,7 +74,7 @@
 
                 <!-- Fila 3: Mediocampistas -->
                 <div class="donofrio-row row-mediocampistas">
-                    @foreach (var slot in (ViewBag.Mediocampistas ?? new List<object>()))
+                    @foreach (var slot in mediocampistas)
                     {
                         var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
                         <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">
@@ -86,7 +93,7 @@
 
                 <!-- Fila 4: Delanteros -->
                 <div class="donofrio-row row-delanteros">
-                    @foreach (var slot in (ViewBag.Delanteros ?? new List<object>()))
+                    @foreach (var slot in delanteros)
                     {
                         var jugador = slot.Jugador as TP06.Models.JugadorDiCarlo;
                         <div class="donofrio-slot @(jugador != null ? "filled" : "empty")">

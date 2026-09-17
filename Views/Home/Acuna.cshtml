@@ -1,5 +1,8 @@
-@{
+﻿@{
     ViewData["Title"] = "Acuña";
+    ViewBag.HistoriaTitulo = "Acuña pide ayuda";
+    ViewBag.HistoriaEfecto = "zoom";
+    ViewBag.HistoriaImagenes = new[] { "/img/Acu%C3%B1a%20ayuda.jfif" };
     var mensaje = ViewBag.Mensaje as string;
     var correcto = ViewBag.Correcto is bool value && value;
 }
@@ -8,11 +11,12 @@
 
 <div class="challenge-page">
     <a asp-controller="Home" asp-action="Index" class="back-link">← Volver al inicio</a>
+    <button type="button" id="historiaReopen" class="historia-reopen">⚑ Ver la historia de la sala</button>
     <div class="challenge-panel">
         <span class="badge">Desafío 2 · Acuña</span>
-        <h1>Vestuario 360°</h1>
+        <h1>LAS COSAS DEL HUEVO</h1>
         <p>
-            El vestuario tiene que quedar perfecto para el changue de cámara. Seleccioná solo los 3 elementos que faltan para completar el look y seguir con la fuga.
+            El Huevo te quiere ayudar a escapar, pero para eso tenés que encontrar los objetos que te va a pedir. Ayudalo a buscarlos.
         </p>
 
         <div class="find-instructions" style="margin-bottom:0.6rem;font-weight:700;color:#fde68a;">
