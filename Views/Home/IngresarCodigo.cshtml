@@ -22,12 +22,16 @@
 
                 <form asp-controller="Home" asp-action="IngresarCodigos" method="post" style="width:100%; max-width:420px;">
                     <div class="mb-3">
+                        <label class="form-label">Tu nombre</label>
+                        <input name="nombreParticipante" class="form-control" value="@ViewBag.Participante" placeholder="Ingresá tu nombre" required />
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Código de sala</label>
-                        <input name="codigoSala" class="form-control" placeholder="Código de la sala (ej: Chacho)" />
+                        <input name="codigoSala" class="form-control" placeholder="Código de la sala (ej: Chacho)" required />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Código de sesión</label>
-                        <input name="codigoSesion" class="form-control" placeholder="Tu código de sesión" />
+                        <input name="codigoSesion" class="form-control" placeholder="Tu código de sesión" required />
                     </div>
                     <div style="display:flex; gap:8px;">
                         <button type="submit" class="btn btn-primary">Enviar códigos</button>

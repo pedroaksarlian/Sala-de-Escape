@@ -20,6 +20,33 @@
     var golesArgentina = ViewBag.GolesArgentina is int gaval ? gaval : 0;
     var golesRival = ViewBag.GolesRival is int grval ? grval : 0;
     var enPenales = ViewBag.EnPenales is bool epval && epval;
+    var minutoActual = ViewBag.MinutoActual as string;
+    var ultimoMinuto = ViewBag.UltimoMinuto as string;
+    var ultimoResultadoTipo = ViewBag.UltimoResultadoTipo as string;
+    var ultimoResultadoTexto = ViewBag.UltimoResultadoTexto as string;
+    var ultimoResultadoCorrecto = ViewBag.UltimoResultadoCorrecto as bool?;
+
+    string ResultadoIcono(string? tipo) => tipo switch
+    {
+        "GOL" => "⚽",
+        "GOL_RIVAL" => "🤖",
+        "ATAJADA" => "🧤",
+        "PALO" => "🥅",
+        "DEFENSOR" => "🛡️",
+        "AFUERA" => "💨",
+        _ => "▶️"
+    };
+
+    string ResultadoLabel(string? tipo) => tipo switch
+    {
+        "GOL" => "¡GOL DE CANTILO!",
+        "GOL_RIVAL" => "GOL DE LOS ROBOTS",
+        "ATAJADA" => "LA ATAJÓ EL ARQUERO",
+        "PALO" => "PEGÓ EN EL PALO",
+        "DEFENSOR" => "LA SACÓ EL DEFENSOR",
+        "AFUERA" => "LA MANDASTE AFUERA",
+        _ => "SITUACIÓN"
+    };
 }
 
 @Html.Partial("_Timer", (object)ViewBag.TiempoRestanteSegundos)
@@ -30,9 +57,9 @@
 
     <div class="challenge-panel dicarlo-panel">
         <span class="badge">Desafío 7 · Di Carlo</span>
-        <h1>La Final</h1>
+        <h1>LA FINAL</h1>
         <p>
-        Llegaste hasta acá con la suerte del chacho, el aleman de micho, el equipo de donofrio y otras habilidades que fuiste aprendiendo. Ahora solo queda una sola cosa: JUGAR LA FINAL.
+        Llegaste hasta acá con la suerte del Chacho, el aleman de Micho, el equipo de Donofrio y otras habilidades que fuiste aprendiendo. Ahora solo queda una sola cosa: JUGAR LA FINAL.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(mensaje))
@@ -51,7 +78,10 @@
         <div class="dicarlo-match-shell">
             <div class="dicarlo-field">
                 <div class="dicarlo-match-header">
-                    <span class="match-badge">Marcador</span>
+                    <div class="match-badge-group">
+                        <span class="match-badge">Marcador</span>
+                        <span class="match-minute">@(enPenales ? "PENALES" : minutoActual)</span>
+                    </div>
                     <div class="match-score">
                         <span class="team-argentina">🇦🇷 Cantilo <strong>@golesArgentina</strong></span>
                         <span class="score-separator">-</span>
@@ -68,8 +98,26 @@
                 }
 
                 <div class="dicarlo-match-body">
-                    <h3>@titulo</h3>
-                    <p>@texto</p>
+                    @if (string.IsNullOrWhiteSpace(ultimoResultadoTipo))
+                    {
+                        <div class="resultado-anterior resultado-neutro">
+                            <span class="resultado-icono">🏟️</span>
+                            <div class="resultado-texto">
+                                <strong>ARRANCA EL PARTIDO</strong>
+                                <p>Prestá atención a la situación y confirmá tu decisión.</p>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="resultado-anterior @(ultimoResultadoCorrecto == true ? "resultado-positivo" : "resultado-negativo")">
+                            <span class="resultado-icono">@ResultadoIcono(ultimoResultadoTipo)</span>
+                            <div class="resultado-texto">
+                                <strong>@ultimoMinuto &middot; @ResultadoLabel(ultimoResultadoTipo)</strong>
+                                <p>@ultimoResultadoTexto</p>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -106,38 +154,46 @@
                     @if (!enPenales)
                     {
                         <form asp-controller="Home" asp-action="DiCarlo" method="post" class="challenge-form dicarlo-form">
-                            <label for="decision">Decisión</label>
-                            <div class="dicarlo-choice-grid">
+                            <label>Decisión</label>
+                            <div class="dicarlo-choice-grid" id="dicarloChoices">
                                 @foreach (var opcion in opciones)
                                 {
-                                    <button type="submit" name="decision" value="@opcion" class="btn dicarlo-choice-btn">
+                                    <button type="button" class="btn dicarlo-choice-btn" data-value="@opcion">
                                         @opcion
                                     </button>
                                 }
                             </div>
+                            <input type="hidden" name="decision" id="dicarloDecisionInput" value="" />
+                            <button type="submit" class="btn btn-confirm-decision" id="dicarloConfirmBtn" disabled>
+                                Confirmar decisión
+                            </button>
                         </form>
                     }
                     else
                     {
                         <form asp-controller="Home" asp-action="Penales" method="post" class="challenge-form dicarlo-form">
-                            <label for="decision">¿Hacia dónde pateás?</label>
-                            <div class="dicarlo-choice-grid">
-                                <button type="submit" name="decision" value="arriba-izquierda" class="btn dicarlo-choice-btn">
+                            <label>¿Hacia dónde pateás?</label>
+                            <div class="dicarlo-choice-grid" id="penalesChoices">
+                                <button type="button" class="btn dicarlo-choice-btn" data-value="arriba-izquierda">
                                     Arriba Izquierda ↖️
                                 </button>
-                                <button type="submit" name="decision" value="arriba-derecha" class="btn dicarlo-choice-btn">
+                                <button type="button" class="btn dicarlo-choice-btn" data-value="arriba-derecha">
                                     Arriba Derecha ↗️
                                 </button>
-                                <button type="submit" name="decision" value="centro" class="btn dicarlo-choice-btn">
+                                <button type="button" class="btn dicarlo-choice-btn" data-value="centro">
                                     Centro 🎯
                                 </button>
-                                <button type="submit" name="decision" value="abajo-izquierda" class="btn dicarlo-choice-btn">
+                                <button type="button" class="btn dicarlo-choice-btn" data-value="abajo-izquierda">
                                     Abajo Izquierda ↙️
                                 </button>
-                                <button type="submit" name="decision" value="abajo-derecha" class="btn dicarlo-choice-btn">
+                                <button type="button" class="btn dicarlo-choice-btn" data-value="abajo-derecha">
                                     Abajo Derecha ↘️
                                 </button>
                             </div>
+                            <input type="hidden" name="decision" id="penalesDecisionInput" value="" />
+                            <button type="submit" class="btn btn-confirm-decision" id="penalesConfirmBtn" disabled>
+                                Confirmar remate
+                            </button>
                         </form>
                     }
                 }
@@ -152,3 +208,30 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    function setupConfirmChoice(containerId, inputId, buttonId) {
+        var container = document.getElementById(containerId);
+        var input = document.getElementById(inputId);
+        var confirmBtn = document.getElementById(buttonId);
+        if (!container || !input || !confirmBtn) {
+            return;
+        }
+
+        container.querySelectorAll('.dicarlo-choice-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                container.querySelectorAll('.dicarlo-choice-btn').forEach(function (b) {
+                    b.classList.remove('selected');
+                });
+                btn.classList.add('selected');
+                input.value = btn.dataset.value;
+                confirmBtn.disabled = false;
+            });
+        });
+    }
+
+    setupConfirmChoice('dicarloChoices', 'dicarloDecisionInput', 'dicarloConfirmBtn');
+    setupConfirmChoice('penalesChoices', 'penalesDecisionInput', 'penalesConfirmBtn');
+})();
+</script>

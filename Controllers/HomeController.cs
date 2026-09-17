@@ -65,14 +65,53 @@ public class HomeController : Controller
             return RedirectToAction(nameof(IngresarCodigo));
         }
 
-        var salaId = _bd.ObtenerSalaIdPorCodigo(codigoSala.Trim());
+        var nombreIngresado = Request.Form["nombreParticipante"].ToString();
+        if (!string.IsNullOrWhiteSpace(nombreIngresado))
+        {
+            nombreIngresado = nombreIngresado.Trim();
+            HttpContext.Session.SetString("participante", nombreIngresado);
+            _bd.GuardarParticipante(nombreIngresado);
+        }
+
+        var codigoSalaNormalizado = codigoSala.Trim();
+        var codigoSesionNormalizado = codigoSesion.Trim();
+
+        var salaId = _bd.ObtenerSalaIdPorCodigo(codigoSalaNormalizado);
+        if (!salaId.HasValue)
+        {
+            salaId = ObtenerSalaIdPorCodigoFallback(codigoSalaNormalizado);
+        }
+
+        if (!salaId.HasValue)
+        {
+            var codigoSalaActual = HttpContext.Session.GetString("codigoSalaActual");
+            if (!string.IsNullOrWhiteSpace(codigoSalaActual) &&
+                string.Equals(codigoSalaActual.Trim(), codigoSalaNormalizado, StringComparison.OrdinalIgnoreCase))
+            {
+                salaId = ObtenerSalaIdPorCodigoFallback(codigoSalaActual.Trim());
+            }
+        }
+
         if (!salaId.HasValue)
         {
             TempData["mensajeError"] = "Código de sala inválido.";
             return RedirectToAction(nameof(IngresarCodigo));
         }
 
-        var resultado = _bd.RecuperarProgresoPorCodigo(codigoSesion.Trim());
+        var resultado = _bd.RecuperarProgresoPorCodigo(codigoSesionNormalizado);
+        if (resultado == null)
+        {
+            var codigoActual = HttpContext.Session.GetString("codigoActual");
+            if (!string.IsNullOrWhiteSpace(codigoActual) &&
+                string.Equals(codigoActual.Trim(), codigoSesionNormalizado, StringComparison.OrdinalIgnoreCase))
+            {
+                var nombreParticipanteActual = GetParticipanteActual();
+                var progresoActual = GetProgress();
+                var tiempoRestanteActual = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+                resultado = (nombreParticipanteActual, string.Join(',', progresoActual), tiempoRestanteActual);
+            }
+        }
+
         if (resultado == null)
         {
             TempData["mensajeError"] = "Código de sesión inválido o expirado.";
@@ -86,8 +125,8 @@ public class HomeController : Controller
 
         HttpContext.Session.SetString("participante", nombreParticipante);
         HttpContext.Session.SetString(ProgressKey, progresoRestaurado ?? string.Empty);
-        HttpContext.Session.SetString("codigoActual", codigoSesion.Trim());
-        HttpContext.Session.SetString("codigoSalaActual", codigoSala.Trim());
+        HttpContext.Session.SetString("codigoActual", codigoSesionNormalizado);
+        HttpContext.Session.SetString("codigoSalaActual", codigoSalaNormalizado);
         HttpContext.Session.SetInt32("tiempoRestanteSegundos", tiempoRestante);
 
         try
@@ -730,8 +769,13 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-    public IActionResult Donofrio(string respuesta)
+    public IActionResult Donofrio(string respuesta, int? tiempoRestanteSegundos = null)
     {
+        if (tiempoRestanteSegundos.HasValue)
+        {
+            ActualizarTiempoDelFormulario(tiempoRestanteSegundos.Value);
+        }
+
         if (!CanAccessChallenge("Donofrio"))
         {
             return RedirectToAction(nameof(Index));
@@ -926,6 +970,11 @@ public class HomeController : Controller
         ViewBag.DiCarloState = state;
         ViewBag.GolesArgentina = state.GolesArgentina;
         ViewBag.GolesRival = state.GolesRival;
+        ViewBag.MinutoActual = escenaActual.Minuto;
+        ViewBag.UltimoMinuto = state.UltimoMinuto;
+        ViewBag.UltimoResultadoTipo = state.UltimoResultadoTipo;
+        ViewBag.UltimoResultadoTexto = state.UltimoResultadoTexto;
+        ViewBag.UltimoResultadoCorrecto = state.UltimoResultadoCorrecto;
         return View();
     }
 
@@ -971,6 +1020,12 @@ public class HomeController : Controller
             TempData["mensaje"] = escenaActual.Fracaso;
             TempData["correcto"] = false;
         }
+
+        // Guardamos qué pasó en esta jugada para mostrarlo en el tablero central
+        state.UltimoMinuto = escenaActual.Minuto;
+        state.UltimoResultadoTipo = acierto ? escenaActual.ResultadoExitoTipo : escenaActual.ResultadoFracasoTipo;
+        state.UltimoResultadoTexto = acierto ? escenaActual.Exito : escenaActual.Fracaso;
+        state.UltimoResultadoCorrecto = acierto;
 
         // Verificar si ganó (3 goles)
         if (state.GolesArgentina >= 3)
@@ -1088,7 +1143,10 @@ public class HomeController : Controller
                 Correcta = "Patear a la derecha",
                 Exito = "¡GOOOOL! Julián mete en escuadra. 1-0 Cantilo vs Los Robots de Di Carlo.",
                 Fracaso = "¡No! El portero robot vuela y desvía. Los Robots sacan la pelota de contragolpe.",
-                EsAtaque = true
+                EsAtaque = true,
+                Minuto = "5'",
+                ResultadoExitoTipo = "GOL",
+                ResultadoFracasoTipo = "ATAJADA"
             },
             new()
             {
@@ -1098,7 +1156,10 @@ public class HomeController : Controller
                 Correcta = "Cortar el pase",
                 Exito = "¡Excelente defensa! Recuperás la pelota limpio para Cantilo.",
                 Fracaso = "¡No! Un delantero robot conecta. El balón entra en la red. 1-1.",
-                EsAtaque = false
+                EsAtaque = false,
+                Minuto = "23'",
+                ResultadoExitoTipo = "DEFENSOR",
+                ResultadoFracasoTipo = "GOL_RIVAL"
             },
             new()
             {
@@ -1107,8 +1168,11 @@ public class HomeController : Controller
                 Opciones = new[] { "Pase al costado", "Conducir y avanzar", "Tiro de larga distancia" },
                 Correcta = "Conducir y avanzar",
                 Exito = "¡Encarás a los robots! Sorteás dos defensores mecánicos y crosás. ¡GOOOOL de Cantilo! 2-1.",
-                Fracaso = "¡Los circuitos de los robots lo ven venir! Pierdes el balón. Los Robots contraatacan.",
-                EsAtaque = true
+                Fracaso = "¡Probás desde lejos pero el remate se va muy desviado! La mandaste afuera.",
+                EsAtaque = true,
+                Minuto = "41'",
+                ResultadoExitoTipo = "GOL",
+                ResultadoFracasoTipo = "AFUERA"
             },
             new()
             {
@@ -1118,7 +1182,10 @@ public class HomeController : Controller
                 Correcta = "Salir a despejar",
                 Exito = "¡Bien! Despejás antes de que el robot conecte. Esquivaste el peligro.",
                 Fracaso = "¡GOOOOL ROBOTS! Un cabezazo mecánico perfecto. 2-2.",
-                EsAtaque = false
+                EsAtaque = false,
+                Minuto = "58'",
+                ResultadoExitoTipo = "DEFENSOR",
+                ResultadoFracasoTipo = "GOL_RIVAL"
             },
             new()
             {
@@ -1127,8 +1194,11 @@ public class HomeController : Controller
                 Opciones = new[] { "Tiro suave al ángulo", "Remate potente al medio", "Dribbling al arquero" },
                 Correcta = "Tiro suave al ángulo",
                 Exito = "¡Tiro perfecto! El arquero robot vuela pero no llega. ¡GOOOOL DE CANTILO! 3-2.",
-                Fracaso = "¡No! El portero robot lo ve venir y tapona. Último intento fallido.",
-                EsAtaque = true
+                Fracaso = "¡Casi! El remate impacta en el palo y sale. Último intento fallido.",
+                EsAtaque = true,
+                Minuto = "85'",
+                ResultadoExitoTipo = "GOL",
+                ResultadoFracasoTipo = "PALO"
             },
             new()
             {
@@ -1138,7 +1208,10 @@ public class HomeController : Controller
                 Correcta = "Marcar apretado",
                 Exito = "¡TFIIIIIIN! Cantilo gana 3-2 contra Los Robots de Di Carlo. ¡Escapás de la sala!",
                 Fracaso = "¡NO! Los Robots meten otra. 3-3. Vamos a penales vs Los Robots.",
-                EsAtaque = false
+                EsAtaque = false,
+                Minuto = "90+3'",
+                ResultadoExitoTipo = "DEFENSOR",
+                ResultadoFracasoTipo = "GOL_RIVAL"
             }
         };
     }
@@ -1192,6 +1265,9 @@ public class HomeController : Controller
         public string Exito { get; set; } = string.Empty;
         public string Fracaso { get; set; } = string.Empty;
         public bool EsAtaque { get; set; } = true;
+        public string Minuto { get; set; } = string.Empty;
+        public string ResultadoExitoTipo { get; set; } = string.Empty;
+        public string ResultadoFracasoTipo { get; set; } = string.Empty;
     }
 
     private sealed class DiCarloGameState
@@ -1204,6 +1280,10 @@ public class HomeController : Controller
         public int GolesRival { get; set; } = 0;
         public bool EnPenales { get; set; } = false;
         public int? ResultadoPenales { get; set; } = null;
+        public string? UltimoMinuto { get; set; }
+        public string? UltimoResultadoTipo { get; set; }
+        public string? UltimoResultadoTexto { get; set; }
+        public bool? UltimoResultadoCorrecto { get; set; }
     }
 
     private static List<DiCarloSlot> BuildDiCarloBoard(List<JugadorDiCarlo> jugadoresAdivinados)
@@ -1572,19 +1652,20 @@ public class HomeController : Controller
         ViewBag.PartidaEnCurso = true;
         ViewBag.Progress = GetProgress();
 
-        var codigoSesion = HttpContext.Session.GetString("codigoActual") ?? string.Empty;
+        var codigoSesion = HttpContext.Session.GetString("codigoActual");
+        if (string.IsNullOrWhiteSpace(codigoSesion))
+        {
+            codigoSesion = GenerarCodigoUnico();
+            HttpContext.Session.SetString("codigoActual", codigoSesion);
 
-        // Mostrar código de sesión sólo si hay progreso o el participante no es el valor por defecto
-        var esParticipantePorDefecto = string.Equals(ViewBag.Participante as string, "Jugador", StringComparison.OrdinalIgnoreCase);
-        var progress = GetProgress();
-        if (!string.IsNullOrWhiteSpace(codigoSesion) && (!esParticipantePorDefecto || progress.Count > 0))
-        {
-            ViewBag.CodigoSesion = codigoSesion;
+            var nombreParticipante = GetParticipanteActual();
+            var progress = GetProgress();
+            var progressStr = string.Join(',', progress);
+            var tiempoRestante = HttpContext.Session.GetInt32("tiempoRestanteSegundos") ?? 1800;
+            _bd.GuardarCodigo(codigoSesion, nombreParticipante, progressStr, tiempoRestante);
         }
-        else
-        {
-            ViewBag.CodigoSesion = string.Empty;
-        }
+
+        ViewBag.CodigoSesion = codigoSesion;
 
         try
         {
@@ -1607,6 +1688,7 @@ public class HomeController : Controller
                 };
             }
 
+            HttpContext.Session.SetString("codigoSalaActual", codigoSala);
             ViewBag.CodigoSala = codigoSala;
         }
         catch
@@ -1671,5 +1753,44 @@ public class HomeController : Controller
 
         HttpContext.Session.SetString(sessionKey, "true");
         ViewBag.IntroVideo = videoPath;
+    }
+
+    private static int? ObtenerSalaIdPorCodigoFallback(string codigoSala)
+    {
+        if (string.IsNullOrWhiteSpace(codigoSala))
+        {
+            return null;
+        }
+
+        var codigo = codigoSala.Trim();
+        var mapa = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Chacho"] = 1,
+            ["Huevo"] = 2,
+            ["Micho"] = 3,
+            ["Chiqui"] = 4,
+            ["Qatar"] = 5,
+            ["Muñeco"] = 6,
+            ["Mafia"] = 7
+        };
+
+        return mapa.TryGetValue(codigo, out var salaId) ? salaId : null;
+    }
+
+    [HttpPost]
+    public IActionResult GuardarNombreParticipante(string nombreParticipante)
+    {
+        var nombre = (nombreParticipante ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(nombre))
+        {
+            TempData["mensajeError"] = "Ingresá tu nombre para comenzar la partida.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        HttpContext.Session.SetString("participante", nombre);
+        _bd.GuardarParticipante(nombre);
+
+        return RedirectToAction(nameof(Coudet));
     }
 }

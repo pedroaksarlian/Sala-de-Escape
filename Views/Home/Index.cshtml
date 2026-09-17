@@ -3,6 +3,7 @@
     var progress = ViewBag.Progress as List<string> ?? new List<string>();
     var mensajeError = TempData["mensajeError"] as string;
     var mensajeExito = TempData["mensajeExito"] as string;
+    var participanteActual = ViewBag.Participante as string ?? "Jugador";
 }
 
 <div class="game-shell home-hero">
@@ -24,10 +25,17 @@
                 <div class="alert alert-success">@mensajeExito</div>
             }
 
-            <div class="hero-actions">
-                <a asp-controller="Home" asp-action="Coudet" asp-route-intro="1" class="btn btn-danger btn-lg">Iniciar partida</a>
-                <a asp-controller="Home" asp-action="IngresarCodigo" class="btn btn-outline-light btn-lg">Ingresar código</a>
-            </div>
+            <form asp-controller="Home" asp-action="GuardarNombreParticipante" method="post" style="max-width: 420px; margin-top: 1rem;">
+                <div class="mb-3">
+                    <label class="form-label" for="nombreParticipante">Tu nombre</label>
+                    <input id="nombreParticipante" name="nombreParticipante" value="@participanteActual" class="form-control" placeholder="Ingresá tu nombre" required />
+                </div>
+
+                <div class="hero-actions">
+                    <button type="submit" class="btn btn-danger btn-lg">Iniciar partida</button>
+                    <a asp-controller="Home" asp-action="IngresarCodigo" class="btn btn-outline-light btn-lg">Ingresar código</a>
+                </div>
+            </form>
         </div>
 
         <div class="hero-side">

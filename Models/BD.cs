@@ -261,4 +261,43 @@ public class BD
             return null;
         }
     }
+
+    public void GuardarParticipante(string nombreParticipante)
+    {
+        if (string.IsNullOrWhiteSpace(nombreParticipante))
+        {
+            return;
+        }
+
+        var nombre = nombreParticipante.Trim();
+
+        try
+        {
+            using var connection = new SqlConnection(_connectionString);
+
+            var existe = connection.QuerySingleOrDefault<int?>(
+                "SELECT TOP 1 Id FROM Partida WHERE NombreParticipante = @NombreParticipante ORDER BY Id DESC",
+                new { NombreParticipante = nombre });
+
+            if (existe.HasValue)
+            {
+                return;
+            }
+
+            connection.Execute(
+                "INSERT INTO Partida (NombreParticipante, Minutos, Segundos, IdSala, Codigo) VALUES (@NombreParticipante, @Minutos, @Segundos, @IdSala, @Codigo)",
+                new
+                {
+                    NombreParticipante = nombre,
+                    Minutos = 0,
+                    Segundos = 0,
+                    IdSala = 1,
+                    Codigo = $"USR-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}"
+                });
+        }
+        catch
+        {
+            // La base no está disponible. La app sigue funcionando sin persistir el nombre.
+        }
+    }
 }
