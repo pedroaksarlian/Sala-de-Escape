@@ -1924,3 +1924,60 @@ body {
   color: rgba(226, 232, 240, 0.7);
   font-size: 0.95rem;
 }
+
+/* ---- Marcador final de Di Carlo ---- */
+.dicarlo-final {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  border: 2px solid rgba(96, 165, 250, 0.5);
+  background: rgba(8, 14, 28, 0.85);
+  color: #f8fafc;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dicarlo-final-ganado {
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 24px rgba(34, 197, 94, 0.25);
+}
+
+.dicarlo-final-perdido {
+  border-color: rgba(239, 68, 68, 0.7);
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.25);
+}
+
+.dicarlo-final-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  opacity: 0.8;
+}
+
+.dicarlo-final-score {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  font-weight: 700;
+}
+
+.dicarlo-final-score strong {
+  font-size: clamp(2rem, 7vw, 3rem);
+  font-weight: 900;
+}
+
+.dicarlo-final-penales,
+.dicarlo-final-texto {
+  margin: 0;
+}
+
+.dicarlo-final-penales {
+  font-weight: 700;
+  opacity: 0.9;
+}

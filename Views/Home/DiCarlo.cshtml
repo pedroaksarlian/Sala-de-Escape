@@ -25,6 +25,7 @@
     var ultimoResultadoTipo = ViewBag.UltimoResultadoTipo as string;
     var ultimoResultadoTexto = ViewBag.UltimoResultadoTexto as string;
     var ultimoResultadoCorrecto = ViewBag.UltimoResultadoCorrecto as bool?;
+    var resultadoPenales = ViewBag.ResultadoPenales as int?;
 
     string ResultadoIcono(string? tipo) => tipo switch
     {
@@ -121,12 +122,15 @@
                 </div>
             </div>
 
-            <div class="dicarlo-clue-box">
-                <div class="clue-header">Situación actual</div>
-                <div class="clue-text">
-                    @texto
+            @if (!partidoGanado && !partidoPerdido)
+            {
+                <div class="dicarlo-clue-box">
+                    <div class="clue-header">Situación actual</div>
+                    <div class="clue-text">
+                        @texto
+                    </div>
                 </div>
-            </div>
+            }
 
             <div class="dicarlo-bottom-row">
                 <div class="plantilla-panel">
@@ -199,10 +203,21 @@
                 }
             </div>
 
-            @if (partidoGanado)
+            @if (partidoGanado || partidoPerdido)
             {
-                <div class="dicarlo-continue">
-                    <a asp-controller="Home" asp-action="Ganaste" class="btn btn-success btn-lg">Escapar de la sala</a>
+                <div class="dicarlo-final @(partidoGanado ? "dicarlo-final-ganado" : "dicarlo-final-perdido")">
+                    <span class="dicarlo-final-label">FINAL DEL PARTIDO</span>
+                    <div class="dicarlo-final-score">
+                        <span>🇦🇷 Cantilo</span>
+                        <strong>@golesArgentina - @golesRival</strong>
+                        <span>Los Robots 🤖</span>
+                    </div>
+                    @if (resultadoPenales.HasValue)
+                    {
+                        <p class="dicarlo-final-penales">Penales: Cantilo @resultadoPenales - @(1 - resultadoPenales) Los Robots</p>
+                    }
+                    <p class="dicarlo-final-texto">@(partidoGanado ? "¡Cantilo campeón!" : "Los Robots de Di Carlo se quedaron con la final.")</p>
+                    <a asp-controller="Home" asp-action="VerFinalDiCarlo" class="btn btn-lg @(partidoGanado ? "btn-success" : "btn-danger")">Ver final</a>
                 </div>
             }
         </div>

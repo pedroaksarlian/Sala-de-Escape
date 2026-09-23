@@ -997,6 +997,7 @@ public class HomeController : Controller
         ViewBag.UltimoResultadoTipo = state.UltimoResultadoTipo;
         ViewBag.UltimoResultadoTexto = state.UltimoResultadoTexto;
         ViewBag.UltimoResultadoCorrecto = state.UltimoResultadoCorrecto;
+        ViewBag.ResultadoPenales = state.ResultadoPenales;
         return View();
     }
 
@@ -1011,7 +1012,46 @@ public class HomeController : Controller
         }
 
         var state = GetDiCarloGameState();
-        var escenaActual = GetDiCarloEscena(state.Paso);
+
+        // Si el partido ya terminó, no se puede seguir jugando: se muestra el marcador final
+        if (!string.Equals(state.Estado, "jugando", StringComparison.OrdinalIgnoreCase))
+        {
+            return RedirectToAction(nameof(DiCarlo));
+        }
+
+        // Manejar penales
+        if (state.EnPenales)
+        {
+            var escenaActual = GetDiCarloEscena(state.Paso);
+
+            if (string.IsNullOrWhiteSpace(decision))
+            {
+                TempData["mensaje"] = "Elegí una opción para los penales.";
+                TempData["correcto"] = false;
+                return RedirectToAction(nameof(DiCarlo));
+            }
+
+            var opcionElegida = NormalizeDecision(decision);
+            var opcionCorrecta = NormalizeDecision(escenaActual.Correcta);
+            var acierto = string.Equals(opcionElegida, opcionCorrecta, StringComparison.OrdinalIgnoreCase);
+
+            state.ResultadoPenales = acierto ? 1 : 0;
+            state.UltimoMinuto = escenaActual.Minuto;
+            state.UltimoResultadoTipo = acierto ? "GOL" : "ATAJADA";
+            state.UltimoResultadoTexto = acierto
+                ? escenaActual.Exito
+                : "El arquero robot adivina la dirección y la ataja. Los Robots de Di Carlo ganan en penales.";
+            state.UltimoResultadoCorrecto = acierto;
+
+            if (acierto)
+            {
+                return TerminarPartidoDiCarlo(state, true, "¡CANTILO GANA EN PENALES! Derrotaste a Los Robots de Di Carlo.");
+            }
+
+            return TerminarPartidoDiCarlo(state, false, "Cantilo falló en los penales. Los Robots de Di Carlo ganan.");
+        }
+
+        var escenaActualNormal = GetDiCarloEscena(state.Paso);
 
         if (string.IsNullOrWhiteSpace(decision))
         {
@@ -1020,99 +1060,112 @@ public class HomeController : Controller
             return RedirectToAction(nameof(DiCarlo));
         }
 
-        var opcionElegida = NormalizeDecision(decision);
-        var opcionCorrecta = NormalizeDecision(escenaActual.Correcta);
-        var acierto = string.Equals(opcionElegida, opcionCorrecta, StringComparison.OrdinalIgnoreCase);
+        var opcionElegidaNormal = NormalizeDecision(decision);
+        var opcionCorrectaNormal = NormalizeDecision(escenaActualNormal.Correcta);
+        var aciertNormal = string.Equals(opcionElegidaNormal, opcionCorrectaNormal, StringComparison.OrdinalIgnoreCase);
 
-        if (acierto)
+        if (aciertNormal)
         {
             // Acertó: si era un ataque, suma gol; si era defensa, evita un gol
-            if (escenaActual.EsAtaque)
+            if (escenaActualNormal.EsAtaque)
             {
                 state.GolesArgentina += 1;
             }
-            TempData["mensaje"] = escenaActual.Exito;
+            TempData["mensaje"] = escenaActualNormal.Exito;
             TempData["correcto"] = true;
         }
         else
         {
             // Falló: si era un ataque, no pasa nada especial; si era defensa, rival mete gol
-            if (!escenaActual.EsAtaque)
+            if (!escenaActualNormal.EsAtaque)
             {
                 state.GolesRival += 1;
             }
-            TempData["mensaje"] = escenaActual.Fracaso;
+            TempData["mensaje"] = escenaActualNormal.Fracaso;
             TempData["correcto"] = false;
         }
 
         // Guardamos qué pasó en esta jugada para mostrarlo en el tablero central
-        state.UltimoMinuto = escenaActual.Minuto;
-        state.UltimoResultadoTipo = acierto ? escenaActual.ResultadoExitoTipo : escenaActual.ResultadoFracasoTipo;
-        state.UltimoResultadoTexto = acierto ? escenaActual.Exito : escenaActual.Fracaso;
-        state.UltimoResultadoCorrecto = acierto;
+        state.UltimoMinuto = escenaActualNormal.Minuto;
+        state.UltimoResultadoTipo = aciertNormal ? escenaActualNormal.ResultadoExitoTipo : escenaActualNormal.ResultadoFracasoTipo;
+        state.UltimoResultadoTexto = aciertNormal ? escenaActualNormal.Exito : escenaActualNormal.Fracaso;
+        state.UltimoResultadoCorrecto = aciertNormal;
 
         // Verificar si ganó (3 goles)
         if (state.GolesArgentina >= 3)
         {
-            state.Estado = "ganado";
-            SaveProgress("Di Carlo");
-            HttpContext.Session.SetString(WinKey, "true");
-            SetDiCarloGameState(state);
-            TempData["mensaje"] = $"¡CANTILO GANA 3-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo. ¡Escapás de la sala!";   
-            TempData["correcto"] = true;
-            return RedirectToAction(nameof(Ganaste));
+            return TerminarPartidoDiCarlo(state, true, $"¡CANTILO GANA {state.GolesArgentina}-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo.");
         }
 
         // Verificar si perdió antes de llegar al final (rival 3 goles)
         if (state.GolesRival >= 3)
         {
-            state.Estado = "perdido";
-            SetDiCarloGameState(state);
-            LimpiarSesion();
-            TempData["mensajeError"] = $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo. La sala se cerró.";
-            return RedirectToAction(nameof(Perdiste));
+            return TerminarPartidoDiCarlo(state, false, $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo.");
         }
 
         // Avanzar a la siguiente escena
         state.Paso += 1;
         state.UltimaDecision = decision;
 
-        // Verificar si terminó el partido (todas las escenas jugadas)
-        if (state.Paso >= GetDiCarloEscenas().Count)
+        // Verificar si terminó el partido (todas las escenas jugadas, sin contar la de penales que es la última)
+        if (state.Paso >= GetDiCarloEscenas().Count - 1)
         {
-            // Si Cantilo tiene 3, ganó
-            if (state.GolesArgentina >= 3)
-            {
-                state.Estado = "ganado";
-                SaveProgress("Di Carlo");
-                HttpContext.Session.SetString(WinKey, "true");
-                SetDiCarloGameState(state);
-                TempData["mensaje"] = $"¡CANTILO GANA 3-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo.";
-                TempData["correcto"] = true;
-                return RedirectToAction(nameof(Ganaste));
-            }
             // Si están empatados, van a penales
-            else if (state.GolesArgentina == state.GolesRival)
+            if (state.GolesArgentina == state.GolesRival)
             {
                 state.EnPenales = true;
-                state.Paso -= 1; // Para que muestre la última escena
+                state.Paso = GetDiCarloEscenas().Count - 1; // Apuntar a la escena de penales (índice 6)
                 SetDiCarloGameState(state);
                 TempData["mensaje"] = $"¡Cantilo y Los Robots empataron {state.GolesArgentina}-{state.GolesRival}! Vamos a PENALES. Un tiro decide el partido.";
                 TempData["correcto"] = false;
                 return RedirectToAction(nameof(DiCarlo));
             }
-            // Si la rival tiene más, perdió
-            else
+
+            if (state.GolesArgentina > state.GolesRival)
             {
-                state.Estado = "perdido";
-                SetDiCarloGameState(state);
-                LimpiarSesion();
-                TempData["mensajeError"] = $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo. La sala se cerró.";
-                return RedirectToAction(nameof(Perdiste));
+                return TerminarPartidoDiCarlo(state, true, $"¡CANTILO GANA {state.GolesArgentina}-{state.GolesRival}! Derrotaste a Los Robots de Di Carlo.");
             }
+
+            return TerminarPartidoDiCarlo(state, false, $"Cantilo perdió {state.GolesRival}-{state.GolesArgentina} contra Los Robots de Di Carlo.");
         }
 
         SetDiCarloGameState(state);
+        return RedirectToAction(nameof(DiCarlo));
+    }
+
+    // Deja el partido terminado y vuelve a la sala para mostrar el marcador final con el botón "Ver final".
+    private IActionResult TerminarPartidoDiCarlo(DiCarloGameState state, bool gano, string mensaje)
+    {
+        state.Estado = gano ? "ganado" : "perdido";
+        if (gano)
+        {
+            SaveProgress("Di Carlo");
+            HttpContext.Session.SetString(WinKey, "true");
+        }
+
+        SetDiCarloGameState(state);
+        TempData["mensaje"] = mensaje;
+        TempData["correcto"] = gano;
+        return RedirectToAction(nameof(DiCarlo));
+    }
+
+    // Botón "Ver final": lleva a Ganaste o Perdiste según cómo terminó el partido.
+    public IActionResult VerFinalDiCarlo()
+    {
+        var state = GetDiCarloGameState();
+
+        if (string.Equals(state.Estado, "ganado", StringComparison.OrdinalIgnoreCase))
+        {
+            return RedirectToAction(nameof(Ganaste));
+        }
+
+        if (string.Equals(state.Estado, "perdido", StringComparison.OrdinalIgnoreCase))
+        {
+            LimpiarSesion();
+            TempData["mensajeError"] = $"Cantilo perdió contra Los Robots de Di Carlo. La sala se cerró.";
+            return RedirectToAction(nameof(Perdiste));
+        }
+
         return RedirectToAction(nameof(DiCarlo));
     }
 
@@ -1165,7 +1218,7 @@ public class HomeController : Controller
                 Texto = "Falcao hace una diagonal perfecta y deja a Julián Álvarez mano a mano contra la defensa robot. ¿Por dónde rematas?",
                 Opciones = new[] { "Patear a la izquierda", "Patear al centro", "Patear a la derecha" },
                 Correcta = "Patear a la derecha",
-                Exito = "¡GOOOOL! Julián mete en escuadra. 1-0 Cantilo vs Los Robots de Di Carlo.",
+                Exito = "¡GOOOOL! Julián mete en escuadra.",
                 Fracaso = "¡No! El portero robot vuela y desvía. Los Robots sacan la pelota de contragolpe.",
                 EsAtaque = true,
                 Minuto = "5'",
@@ -1179,7 +1232,7 @@ public class HomeController : Controller
                 Opciones = new[] { "Despejar al fondo del campo", "Cortar el pase", "Hacer falta" },
                 Correcta = "Cortar el pase",
                 Exito = "¡Excelente defensa! Recuperás la pelota limpio para Cantilo.",
-                Fracaso = "¡No! Un delantero robot conecta. El balón entra en la red. 1-1.",
+                Fracaso = "¡No! Un delantero robot conecta. El balón entra en la red.",
                 EsAtaque = false,
                 Minuto = "23'",
                 ResultadoExitoTipo = "DEFENSOR",
@@ -1191,7 +1244,7 @@ public class HomeController : Controller
                 Texto = "Cantilo tiene espacio. La cancha está abierta. Enzo Fernández te pasa al hueco.",
                 Opciones = new[] { "Pase al costado", "Conducir y avanzar", "Tiro de larga distancia" },
                 Correcta = "Conducir y avanzar",
-                Exito = "¡Encarás a los robots! Sorteás dos defensores mecánicos y crosás. ¡GOOOOL de Cantilo! 2-1.",
+                Exito = "¡Encarás a los robots! Sorteás dos defensores mecánicos y crosás. ¡GOOOOL de Cantilo!",
                 Fracaso = "¡Probás desde lejos pero el remate se va muy desviado! La mandaste afuera.",
                 EsAtaque = true,
                 Minuto = "41'",
@@ -1205,7 +1258,7 @@ public class HomeController : Controller
                 Opciones = new[] { "Salir a despejar", "Dejarlo pasar", "Entrecortado en las manos" },
                 Correcta = "Salir a despejar",
                 Exito = "¡Bien! Despejás antes de que el robot conecte. Esquivaste el peligro.",
-                Fracaso = "¡GOOOOL ROBOTS! Un cabezazo mecánico perfecto. 2-2.",
+                Fracaso = "¡GOOOOL ROBOTS! Un cabezazo mecánico perfecto.",
                 EsAtaque = false,
                 Minuto = "58'",
                 ResultadoExitoTipo = "DEFENSOR",
@@ -1217,7 +1270,7 @@ public class HomeController : Controller
                 Texto = "Los Robots tienen que defender. Cantilo genera una oportunidad clarísima. Falcao define solo.",
                 Opciones = new[] { "Tiro suave al ángulo", "Remate potente al medio", "Dribbling al arquero" },
                 Correcta = "Tiro suave al ángulo",
-                Exito = "¡Tiro perfecto! El arquero robot vuela pero no llega. ¡GOOOOL DE CANTILO! 3-2.",
+                Exito = "¡Tiro perfecto! El arquero robot vuela pero no llega. ¡GOOOOL DE CANTILO!",
                 Fracaso = "¡Casi! El remate impacta en el palo y sale. Último intento fallido.",
                 EsAtaque = true,
                 Minuto = "85'",
@@ -1230,11 +1283,24 @@ public class HomeController : Controller
                 Texto = "Quedan segundos. Los Robots atacan desesperados. Cantilo defiende con todo. Todo o nada.",
                 Opciones = new[] { "Marcar apretado", "Permitir el balón y defender", "Agredir temprano" },
                 Correcta = "Marcar apretado",
-                Exito = "¡TFIIIIIIN! Cantilo gana 3-2 contra Los Robots de Di Carlo. ¡Escapás de la sala!",
+                Exito = "¡Bien! El robot no puede rematar y la defensa de Cantilo despeja. ¡Partido terminado!",
                 Fracaso = string.Empty,
                 EsAtaque = false,
                 Minuto = "90+3'",
                 ResultadoExitoTipo = "DEFENSOR",
+                ResultadoFracasoTipo = "GOL_RIVAL"
+            },
+            new()
+            {
+                Titulo = "PENALES: La gran definición",
+                Texto = "Montiel tiene el último penal. El decisivo. Es el penal soñado por cualquier pibe. Te acordas cómo lo pateó? Somos todos o no?",
+                Opciones = new[] { "Cruzado a la izquierda", "Picarla", "Abierto a la derecha" },
+                Correcta = "Cruzado a la izquierda",
+                Exito = "El robot se lanza al otro lado y la pelota entra. ¡GOOOOL! ¡CANTILO GANA EN PENALES!",
+                Fracaso = string.Empty,
+                EsAtaque = false,
+                Minuto = "Penales",
+                ResultadoExitoTipo = "GOL",
                 ResultadoFracasoTipo = "GOL_RIVAL"
             }
         };
